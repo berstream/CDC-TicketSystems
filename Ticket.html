@@ -1,0 +1,3203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ticket System — Multi-Site</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root {
+  --primary: #2563eb; --primary-dark: #1d4ed8;
+  --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #06b6d4;
+  --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb; --gray-300:#d1d5db;
+  --gray-400:#9ca3af; --gray-500:#6b7280; --gray-600:#4b5563; --gray-700:#374151;
+  --gray-800:#1f2937; --gray-900:#111827;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { min-height:100%; font-family:'Sarabun',-apple-system,sans-serif; background:var(--gray-50); color:var(--gray-800); }
+body { display:flex; flex-direction:column; }
+
+/* ── TOPBAR ── */
+.topbar { background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%); color:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,.08); position:sticky; top:0; z-index:100; gap:10px; }
+.topbar h1 { font-size:17px; font-weight:700; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.topbar h1 .logo { background:rgba(255,255,255,.15); padding:5px 10px; border-radius:8px; font-size:13px; }
+.topbar-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+.topbar .user-info { font-size:12px; opacity:.9; }
+.btn-icon { background:rgba(255,255,255,.15); border:none; color:#fff; width:36px; height:36px; border-radius:8px; cursor:pointer; position:relative; font-size:17px; }
+.btn-icon:hover { background:rgba(255,255,255,.25); }
+.btn-icon .badge { position:absolute; top:-4px; right:-4px; background:var(--danger); color:#fff; font-size:10px; min-width:17px; height:17px; border-radius:9px; padding:0 4px; display:flex; align-items:center; justify-content:center; font-weight:700; }
+.btn-topbar { background:rgba(255,255,255,.15); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; font-family:inherit; font-weight:500; white-space:nowrap; }
+.btn-topbar:hover { background:rgba(255,255,255,.25); }
+.btn-topbar.off { opacity:.6; }
+
+.container { flex:1; max-width:1280px; width:100%; margin:0 auto; padding:16px; }
+
+/* ── LOGIN ── */
+.login-wrap { display:flex; align-items:center; justify-content:center; min-height:calc(100vh - 62px); padding:16px; }
+.login-card { background:#fff; padding:32px 26px; border-radius:16px; box-shadow:0 10px 40px rgba(0,0,0,.08); width:100%; max-width:440px; }
+.login-card h2 { font-size:22px; font-weight:700; margin-bottom:4px; color:var(--gray-900); text-align:center; }
+.login-card .subtitle { text-align:center; color:var(--gray-500); margin-bottom:22px; font-size:13px; }
+.site-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px; margin-bottom:16px; }
+.site-card { border:2px solid var(--gray-300); border-radius:12px; padding:18px 8px; text-align:center; cursor:pointer; transition:.15s; background:#fff; font-family:inherit; }
+.site-card:hover { border-color:var(--primary); transform:translateY(-2px); box-shadow:0 4px 12px rgba(37,99,235,.12); }
+.site-card .site-icon { font-size:26px; margin-bottom:6px; }
+.site-card .site-name { font-weight:700; font-size:14px; color:var(--gray-900); }
+.divider { display:flex; align-items:center; gap:10px; color:var(--gray-400); font-size:12px; margin:16px 0; }
+.divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--gray-200); }
+.link-super { display:block; text-align:center; color:var(--gray-500); font-size:13px; cursor:pointer; background:none; border:none; font-family:inherit; width:100%; padding:8px; }
+.link-super:hover { color:var(--primary); }
+.back-link { color:var(--primary); cursor:pointer; font-size:13px; background:none; border:none; font-family:inherit; padding:0; margin-bottom:14px; display:inline-flex; align-items:center; gap:4px; }
+
+/* ── FORMS ── */
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:13px; font-weight:600; margin-bottom:5px; color:var(--gray-700); }
+.form-group label .req { color:var(--danger); }
+.form-control { width:100%; padding:10px 13px; border:1.5px solid var(--gray-300); border-radius:8px; font-size:14px; font-family:inherit; transition:.2s; background:#fff; }
+.form-control:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+.form-control:disabled { background:var(--gray-100); cursor:not-allowed; }
+textarea.form-control { resize:vertical; min-height:85px; }
+.btn { padding:10px 18px; border-radius:8px; border:none; cursor:pointer; font-size:14px; font-weight:600; font-family:inherit; transition:.2s; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-dark); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-warning { background:var(--warning); color:#fff; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-secondary { background:var(--gray-200); color:var(--gray-700); }
+.btn-secondary:hover { background:var(--gray-300); }
+.btn-block { width:100%; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+.btn-sm { padding:6px 11px; font-size:12px; }
+
+/* ── TABS ── */
+.tabs { display:flex; gap:2px; border-bottom:2px solid var(--gray-200); margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.tab { padding:9px 14px; border:none; background:none; cursor:pointer; font-size:13px; font-weight:600; color:var(--gray-500); border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; font-family:inherit; }
+.tab:hover { color:var(--gray-700); }
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+.tab .tab-badge { background:var(--danger); color:#fff; font-size:10px; min-width:17px; height:17px; border-radius:9px; padding:0 4px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; margin-left:5px; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* ── CARDS ── */
+.card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.04); border:1px solid var(--gray-200); }
+.card-title { font-size:15px; font-weight:700; margin-bottom:14px; color:var(--gray-900); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+/* ── SITE CHIPS (dashboard filter) ── */
+.site-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+.site-chip { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border:2px solid var(--gray-300); border-radius:20px; background:#fff; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; color:var(--gray-600); transition:.15s; }
+.site-chip.on { border-color:var(--primary); background:#eff6ff; color:var(--primary); }
+.site-chip .chk { width:16px; height:16px; border:2px solid var(--gray-400); border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; color:#fff; }
+.site-chip.on .chk { background:var(--primary); border-color:var(--primary); }
+
+/* ── TICKET LIST ── */
+.ticket-list { display:flex; flex-direction:column; gap:8px; }
+.ticket-item { background:#fff; border:1px solid var(--gray-200); border-radius:10px; padding:13px; cursor:pointer; transition:.15s; display:flex; gap:10px; align-items:flex-start; position:relative; }
+.ticket-item:hover { box-shadow:0 4px 12px rgba(0,0,0,.06); border-color:var(--primary); }
+.ticket-item.new-update { background:linear-gradient(90deg,#fef3c7 0%,#fff 30%); }
+.ticket-item.overdue { border-left:4px solid var(--danger); }
+.ticket-check { flex-shrink:0; margin-top:12px; width:18px; height:18px; cursor:pointer; accent-color:var(--primary); }
+.ticket-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.ticket-icon.pending { background:#fef3c7; }
+.ticket-icon.inProgress { background:#dbeafe; }
+.ticket-icon.resolved { background:#d1fae5; }
+.ticket-body { flex:1; min-width:0; }
+.ticket-title { font-weight:600; font-size:14px; color:var(--gray-900); margin-bottom:3px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.ticket-meta { display:flex; gap:10px; font-size:11px; color:var(--gray-500); flex-wrap:wrap; }
+.ticket-meta span { display:inline-flex; align-items:center; gap:3px; }
+.age-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:var(--gray-100); color:var(--gray-600); }
+.age-badge.warn { background:#fef3c7; color:#92400e; }
+.age-badge.late { background:#fee2e2; color:var(--danger); }
+.comment-badge { font-size:10px; background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:10px; font-weight:700; }
+.status-badge { padding:3px 9px; border-radius:12px; font-size:10px; font-weight:700; white-space:nowrap; }
+.status-pending { background:#fef3c7; color:#92400e; }
+.status-inProgress { background:#dbeafe; color:#1e40af; }
+.status-resolved { background:#d1fae5; color:#065f46; }
+.status-pendingApproval { background:#fef3c7; color:#78350f; border:1px dashed #92400e; }
+.status-approved { background:#d1fae5; color:#065f46; }
+.status-rejected { background:#fee2e2; color:#991b1b; }
+.priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.priority-urgent { background:var(--danger); }
+.priority-normal { background:var(--warning); }
+.priority-low { background:var(--success); }
+
+/* ── BULK BAR ── */
+.bulk-bar { position:sticky; bottom:12px; background:var(--gray-900); color:#fff; border-radius:12px; padding:12px 16px; display:none; align-items:center; gap:12px; box-shadow:0 8px 24px rgba(0,0,0,.25); z-index:50; flex-wrap:wrap; margin-top:12px; }
+.bulk-bar.show { display:flex; }
+.bulk-bar select { padding:8px 10px; border-radius:8px; border:none; font-family:inherit; font-size:13px; }
+
+/* ── FILTER BAR ── */
+.filter-bar { background:#fff; padding:12px 14px; border-radius:10px; border:1px solid var(--gray-200); margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+.filter-bar .form-group { margin-bottom:0; flex:1; min-width:130px; }
+.filter-bar select.form-control,.filter-bar input.form-control { padding:8px 10px; font-size:13px; }
+
+/* ── DASHBOARD ── */
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:16px; }
+.stat-card { background:#fff; border-radius:12px; padding:16px; border:1px solid var(--gray-200); position:relative; overflow:hidden; }
+.stat-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; }
+.stat-card.total::before { background:var(--primary); }
+.stat-card.pending::before { background:var(--warning); }
+.stat-card.inProgress::before { background:var(--info); }
+.stat-card.resolved::before { background:var(--success); }
+.stat-card.rating::before { background:#8b5cf6; }
+.stat-card .stat-label { font-size:11px; color:var(--gray-500); font-weight:600; margin-bottom:5px; text-transform:uppercase; }
+.stat-card .stat-value { font-size:28px; font-weight:700; color:var(--gray-900); line-height:1; }
+.stat-card .stat-sub { font-size:11px; color:var(--gray-400); margin-top:5px; }
+.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+.chart-card { background:#fff; padding:16px; border-radius:12px; border:1px solid var(--gray-200); }
+.chart-card h3 { font-size:13px; font-weight:700; margin-bottom:12px; color:var(--gray-900); }
+.chart-container { position:relative; height:260px; }
+.chart-container.tall { height:300px; }
+@media (max-width:768px) { .chart-grid { grid-template-columns:1fr; } }
+
+/* ── MODAL ── */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:1000; padding:14px; }
+.modal-overlay.show { display:flex; }
+.modal { background:#fff; border-radius:16px; max-width:720px; width:100%; max-height:92vh; overflow-y:auto; }
+.modal-header { padding:16px 20px; border-bottom:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:#fff; border-radius:16px 16px 0 0; z-index:5; }
+.modal-header h2 { font-size:16px; font-weight:700; }
+.modal-close { background:none; border:none; font-size:24px; cursor:pointer; color:var(--gray-500); line-height:1; padding:2px 8px; }
+.modal-body { padding:20px; }
+.modal-footer { padding:14px 20px; border-top:1px solid var(--gray-200); display:flex; gap:8px; justify-content:flex-end; position:sticky; bottom:0; background:#fff; flex-wrap:wrap; }
+.detail-row { display:grid; grid-template-columns:120px 1fr; gap:12px; padding:9px 0; border-bottom:1px solid var(--gray-100); }
+.detail-row .label { font-weight:600; color:var(--gray-600); font-size:12px; }
+.detail-row .value { color:var(--gray-900); font-size:13px; word-break:break-word; }
+.status-selector { display:flex; gap:6px; flex-wrap:wrap; }
+.status-btn { flex:1; min-width:100px; padding:9px 6px; border:2px solid var(--gray-300); border-radius:8px; background:#fff; cursor:pointer; font-size:12px; font-weight:600; font-family:inherit; }
+.status-btn.active[data-status="pending"] { border-color:var(--warning); background:#fef3c7; color:#92400e; }
+.status-btn.active[data-status="inProgress"] { border-color:var(--info); background:#dbeafe; color:#1e40af; }
+.status-btn.active[data-status="resolved"] { border-color:var(--success); background:#d1fae5; color:#065f46; }
+
+/* ── COMMENTS ── */
+.comment-thread { background:var(--gray-50); border-radius:10px; padding:12px; max-height:280px; overflow-y:auto; margin-bottom:10px; }
+.comment-item { margin-bottom:10px; display:flex; flex-direction:column; }
+.comment-item.admin { align-items:flex-end; }
+.comment-bubble { max-width:85%; padding:9px 12px; border-radius:12px; font-size:13px; background:#fff; border:1px solid var(--gray-200); }
+.comment-item.admin .comment-bubble { background:#dbeafe; border-color:#bfdbfe; }
+.comment-meta { font-size:10px; color:var(--gray-400); margin-top:3px; }
+.comment-input-row { display:flex; gap:8px; }
+.comment-input-row input { flex:1; }
+
+/* ── RATING ── */
+.stars { display:flex; gap:4px; font-size:26px; cursor:pointer; }
+.stars span { color:var(--gray-300); transition:.1s; }
+.stars span.on { color:#f59e0b; }
+
+/* ── PRIORITY ── */
+.priority-group { display:flex; gap:8px; }
+.priority-btn { flex:1; padding:9px 5px; border:2px solid var(--gray-300); border-radius:8px; background:#fff; cursor:pointer; font-size:12px; font-weight:600; font-family:inherit; }
+.priority-btn.active.urgent { border-color:var(--danger); background:#fee2e2; color:var(--danger); }
+.priority-btn.active.normal { border-color:var(--warning); background:#fef3c7; color:#92400e; }
+.priority-btn.active.low { border-color:var(--success); background:#d1fae5; color:#065f46; }
+
+/* ── IMAGE UPLOAD ── */
+.image-upload { border:2px dashed var(--gray-300); padding:20px; border-radius:8px; text-align:center; cursor:pointer; display:block; }
+.image-upload:hover { border-color:var(--primary); background:var(--gray-50); }
+.image-preview { max-width:100%; max-height:180px; border-radius:8px; margin-top:10px; }
+
+/* ── TABLES ── */
+.dept-table { width:100%; background:#fff; border-radius:12px; overflow-x:auto; border:1px solid var(--gray-200); }
+.dept-table table { width:100%; border-collapse:collapse; min-width:560px; }
+.dept-table th { background:var(--gray-50); padding:10px 12px; text-align:left; font-size:12px; font-weight:700; color:var(--gray-700); border-bottom:1px solid var(--gray-200); white-space:nowrap; }
+.dept-table td { padding:10px 12px; font-size:13px; border-bottom:1px solid var(--gray-100); }
+.dept-table tr:last-child td { border-bottom:none; }
+.toggle-switch { position:relative; display:inline-block; width:42px; height:23px; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.slider { position:absolute; cursor:pointer; inset:0; background:var(--gray-300); border-radius:23px; transition:.3s; }
+.slider:before { position:absolute; content:""; height:17px; width:17px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.3s; }
+input:checked + .slider { background:var(--success); }
+input:checked + .slider:before { transform:translateX(19px); }
+
+/* ── TOAST ── */
+.toast-container { position:fixed; top:70px; right:14px; z-index:2000; display:flex; flex-direction:column; gap:8px; max-width:340px; }
+.toast { background:#fff; border-radius:10px; box-shadow:0 6px 24px rgba(0,0,0,.12); padding:12px 14px; border-left:4px solid var(--primary); display:flex; gap:10px; animation:slideIn .3s ease-out; cursor:pointer; }
+.toast.success { border-left-color:var(--success); }
+.toast.warning { border-left-color:var(--warning); }
+.toast.error { border-left-color:var(--danger); }
+.toast.info { border-left-color:var(--info); }
+.toast-icon { font-size:18px; flex-shrink:0; }
+.toast-body { flex:1; min-width:0; }
+.toast-title { font-weight:700; font-size:13px; margin-bottom:2px; }
+.toast-msg { font-size:12px; color:var(--gray-600); }
+@keyframes slideIn { from { transform:translateX(400px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+@keyframes fadeOut { to { opacity:0; transform:translateX(400px); } }
+.toast.removing { animation:fadeOut .3s ease-in forwards; }
+
+/* ── NOTIF DROPDOWN ── */
+.notif-dropdown { position:absolute; top:48px; right:0; background:#fff; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,.15); width:340px; max-height:460px; overflow-y:auto; display:none; z-index:200; color:var(--gray-800); }
+.notif-dropdown.show { display:block; }
+.notif-header { padding:12px 14px; border-bottom:1px solid var(--gray-200); font-weight:700; font-size:13px; }
+.notif-item { padding:11px 14px; border-bottom:1px solid var(--gray-100); cursor:pointer; }
+.notif-item:hover { background:var(--gray-50); }
+.notif-title { font-weight:600; font-size:12px; color:var(--gray-900); }
+.notif-meta { font-size:10px; color:var(--gray-500); margin-top:2px; }
+.notif-empty { padding:36px 18px; text-align:center; color:var(--gray-400); font-size:12px; }
+
+/* ── MISC ── */
+.empty-state { text-align:center; padding:50px 18px; color:var(--gray-400); }
+.empty-state .icon { font-size:44px; margin-bottom:8px; }
+.empty-state .title { font-size:15px; font-weight:600; color:var(--gray-600); margin-bottom:4px; }
+.loading { display:inline-block; width:15px; height:15px; border:2px solid var(--gray-300); border-top-color:var(--primary); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-page { display:flex; align-items:center; justify-content:center; padding:36px; gap:10px; color:var(--gray-500); }
+.draft-banner { background:#fef3c7; border:1px solid var(--warning); padding:9px 12px; border-radius:8px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; font-size:12px; gap:8px; flex-wrap:wrap; }
+.chip { display:inline-flex; align-items:center; gap:5px; background:var(--gray-100); padding:5px 9px; border-radius:8px; font-size:12px; }
+.export-preview { max-height:360px; overflow-y:auto; background:var(--gray-50); padding:14px; border-radius:8px; margin-top:10px; font-size:12px; }
+code { background:var(--gray-100); padding:2px 6px; border-radius:5px; font-size:12px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width:600px) {
+  .topbar { padding:10px 12px; }
+  .topbar h1 { font-size:14px; }
+  .topbar h1 .logo { display:none; }
+  .container { padding:10px; }
+  .detail-row { grid-template-columns:1fr; gap:3px; }
+  .stat-grid { grid-template-columns:repeat(2,1fr); }
+  .stat-card .stat-value { font-size:22px; }
+  .notif-dropdown { position:fixed; top:58px; right:6px; left:6px; width:auto; }
+  .modal { max-height:95vh; border-radius:12px; }
+  .modal-body { padding:14px; }
+  .filter-bar .form-group { min-width:100%; }
+  .bulk-bar { position:fixed; left:10px; right:10px; bottom:10px; }
+}
+@media print {
+  .topbar,.tabs,.filter-bar,.modal-footer,.topbar-right,.bulk-bar { display:none !important; }
+  body { background:#fff; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1><span class="logo" id="siteBadge">🎫</span> <span id="appTitle">Ticket System</span></h1>
+  <div class="topbar-right" id="topbarRight" style="display:none;">
+    <button class="btn-topbar" id="soundToggle" onclick="toggleSound()"><span id="soundIcon">🔔</span> <span id="soundLabel">เสียงเปิด</span></button>
+    <button class="btn-icon" id="bellBtn" onclick="toggleNotifDropdown()" style="display:none;">🔔<span class="badge" id="bellBadge" style="display:none;">0</span></button>
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-header">การแจ้งเตือน (ยังไม่อ่าน)</div>
+      <div id="notifList"></div>
+    </div>
+    <div class="user-info" id="userInfo"></div>
+    <button class="btn-topbar" onclick="openChangePasswordModal()" title="เปลี่ยนรหัสผ่าน" id="btnChangePw">🔑</button>
+    <button class="btn-topbar" onclick="logout()">ออก</button>
+  </div>
+</header>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- LOGIN: เลือก Site -->
+<div id="siteSelectView" class="login-wrap">
+  <div class="login-card">
+    <h2>🎫 Ticket System</h2>
+    <p class="subtitle">เลือก Site งานของคุณ</p>
+    <div class="site-grid" id="siteGrid">
+      <div class="loading-page"><span class="loading"></span> กำลังโหลด...</div>
+    </div>
+    <div class="divider">หรือ</div>
+    <button class="link-super" onclick="showSuperLogin()">🛡️ Super Admin</button>
+  </div>
+</div>
+
+<!-- LOGIN: กรอกข้อมูล -->
+<div id="loginView" class="login-wrap" style="display:none;">
+  <div class="login-card">
+    <button class="back-link" onclick="backToSites()">← เปลี่ยน Site</button>
+    <h2 id="loginSiteName">เข้าสู่ระบบ</h2>
+    <p class="subtitle">ระบบแจ้งปัญหา IT</p>
+    <div class="form-group">
+      <label>แผนก <span class="req">*</span></label>
+      <select id="loginDept" class="form-control" onchange="onDeptChange()"><option value="">-- เลือกแผนก --</option></select>
+    </div>
+    <div class="form-group">
+      <label>ตำแหน่ง <span class="req">*</span></label>
+      <select id="loginPosition" class="form-control" disabled><option value="">-- เลือกแผนกก่อน --</option></select>
+    </div>
+    <div class="form-group">
+      <label>รหัสผ่าน <span class="req">*</span></label>
+      <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary btn-block" id="loginBtn" onclick="doLogin()">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- LOGIN: Super Admin -->
+<div id="superLoginView" class="login-wrap" style="display:none;">
+  <div class="login-card">
+    <button class="back-link" onclick="backToSites()">← กลับ</button>
+    <h2>🛡️ Super Admin</h2>
+    <p class="subtitle">สำหรับผู้ดูแลระบบส่วนกลางเท่านั้น</p>
+    <div class="form-group">
+      <label>รหัสผ่าน Super Admin</label>
+      <input type="password" id="superPassword" class="form-control" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSuperLogin()">
+    </div>
+    <button class="btn btn-primary btn-block" id="superLoginBtn" onclick="doSuperLogin()">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appView" style="display:none;" class="container"><div id="mainContent"></div></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="ticketModal">
+  <div class="modal">
+    <div class="modal-header"><h2 id="modalTitle">Detail</h2><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════ CONFIG — แก้เป็น GAS URL หลัง deploy ═══════ */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwQzQagHL3ILYpgn2pjdfbLS9fmiJ7tv929RLBXnena00a3UGuPmQP-GK7oTERwEdDe/exec';
+
+let state = {
+  sites: [], user: null, superMode: false, superKey: null,
+  depts: [], positions: [], categories: [], bus: [], tickets: [],
+  currentTab: '', currentTicket: null, currentComments: [],
+  pollTimer: null, pollNow: null, idleTimer: null,
+  notifTickets: [], readTicketIds: new Set(), knownSnapshot: {}, primed: false,
+  updatedTicketIds: new Set(), highlightUnread: new Set(),
+  soundOn: true, audioCtx: null,
+  selectedTickets: new Set(),
+  dashSites: new Set(), filters: {},
+  allPositions: [], showPasswords: false,
+  pendingStatus: null, selSiteId: null, archiveTickets: [],
+  adminPage: 1, myPage: 1
+};
+
+/* ═══════ API ═══════ */
+async function apiGet(action, params = {}) {
+  const url = new URL(GAS_URL);
+  url.searchParams.set('action', action);
+  Object.keys(params).forEach(k => { if (params[k] != null) url.searchParams.set(k, params[k]); });
+  url.searchParams.set('_t', Date.now());
+  const res = await fetch(url.toString(), { method: 'GET', cache: 'no-store' });
+  return await res.json();
+}
+async function apiPost(action, data = {}) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST', body: JSON.stringify({ action, ...data }),
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+  });
+  return await res.json();
+}
+
+/* ═══════ UTIL ═══════ */
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function parseDateMs(v) {
+  if (!v) return 0;
+  const s = String(v).trim();
+  const m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{1,2}):?(\d{1,2})?/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +(m[6]||0)).getTime();
+  const t = Date.parse(s);
+  return isNaN(t) ? 0 : t;
+}
+/** หา SLA (ชม.) ของหมวดย่อยจาก cache — ไม่พบ = default 24 ชม. */
+function getCategorySLA(main, sub) {
+  const cats = state.categories || [];
+  for (const c of cats) {
+    if (c.main === main && c.sub === sub) {
+      const h = parseFloat(c.slaHours);
+      return (isNaN(h) || h <= 0) ? 24 : h;
+    }
+  }
+  return 24;
+}
+function ageInfo(createdAt, status, priority, category, subCategory) {
+  if (status === 'resolved' || status === 'approved' || status === 'rejected') return null;
+  const hrs = (Date.now() - parseDateMs(createdAt)) / 3600000;
+  const limit = getCategorySLA(category, subCategory);
+  const cls = hrs >= limit ? 'late' : hrs >= limit * 0.7 ? 'warn' : '';
+  const label = hrs < 1 ? '< 1 ชม.' : hrs < 24 ? Math.floor(hrs) + ' ชม.' : Math.floor(hrs/24) + ' วัน';
+  return { label: 'ค้าง ' + label, cls, overdue: hrs >= limit };
+}
+/** คะแนน SLA ต่อ ticket ที่ปิดแล้ว: ratio = ใช้จริง ÷ SLA */
+function slaScoreOf(t) {
+  if (t.status !== 'resolved' && t.status !== 'approved') return null;
+  const endAt = t.resolvedAt || t.approvedAt || t.updatedAt;
+  if (!endAt || !t.createdAt) return null;
+  const used = (parseDateMs(endAt) - parseDateMs(t.createdAt)) / 3600000;
+  if (used < 0) return null;
+  const limit = getCategorySLA(t.category, t.subCategory);
+  const ratio = used / limit;
+  let score, band;
+  if (ratio <= 1.0) { score = 100; band = 'ontime'; }
+  else if (ratio <= 2.0) { score = 60; band = 'slight'; }
+  else { score = 40; band = 'over'; }
+  return { score, band, ratio, used, limit };
+}
+function statusText(s) { return { pending:'รอดำเนินการ', inProgress:'กำลังดำเนินการ', resolved:'แล้วเสร็จ', pendingApproval:'⏳ รออนุมัติ', approved:'✅ อนุมัติแล้ว', rejected:'❌ ไม่อนุมัติ' }[s] || s; }
+function prioText(p) { return { urgent:'🔴 เร่งด่วน', normal:'🟡 ปกติ', low:'🟢 ไม่เร่งด่วน' }[p] || p; }
+
+/* ═══════ TOAST ═══════ */
+function toast(title, msg, type = 'info', onClick = null) {
+  const c = document.getElementById('toastContainer');
+  const div = document.createElement('div');
+  div.className = 'toast ' + type;
+  const icons = { success:'✅', warning:'⚠️', error:'❌', info:'ℹ️' };
+  div.innerHTML = `<div class="toast-icon">${icons[type]||'ℹ️'}</div><div class="toast-body"><div class="toast-title">${escapeHtml(title)}</div><div class="toast-msg">${escapeHtml(msg)}</div></div>`;
+  if (onClick) div.onclick = () => { onClick(); removeToast(div); };
+  c.appendChild(div);
+  setTimeout(() => removeToast(div), 5000);
+}
+function removeToast(el) {
+  if (!el || !el.parentNode) return;
+  el.classList.add('removing');
+  setTimeout(() => el.remove(), 300);
+}
+
+/* ═══════ SOUND ═══════
+   ค่าเริ่มต้น = เปิดเสมอ (เว้นแต่ผู้ใช้เคยกดปิดเองไว้ก่อน — จำใน localStorage)
+   เบราว์เซอร์บล็อกเสียงจนกว่าจะมี interaction ก่อน จึงต้อง initAudio()
+   ทันทีที่มีการคลิก/แตะครั้งแรกในหน้า โดยไม่ต้องรอผู้ใช้กดปุ่มเสียงเอง */
+const SOUND_PREF_KEY = 'tk_sound_pref';
+function loadSoundPref() {
+  try {
+    const saved = localStorage.getItem(SOUND_PREF_KEY);
+    return saved === null ? true : saved === 'on'; // ไม่เคยตั้ง = เปิด (ค่าเริ่มต้น)
+  } catch(e) { return true; }
+}
+function saveSoundPref(on) {
+  try { localStorage.setItem(SOUND_PREF_KEY, on ? 'on' : 'off'); } catch(e) {}
+}
+function armAudioOnFirstInteraction() {
+  const arm = () => {
+    if (state.soundOn) initAudio();
+    document.removeEventListener('click', arm);
+    document.removeEventListener('keydown', arm);
+    document.removeEventListener('touchstart', arm);
+  };
+  document.addEventListener('click', arm, { once: true, passive: true });
+  document.addEventListener('keydown', arm, { once: true, passive: true });
+  document.addEventListener('touchstart', arm, { once: true, passive: true });
+}
+function initAudio() {
+  if (!state.audioCtx) { try { state.audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e) {} }
+  if (state.audioCtx && state.audioCtx.state === 'suspended') state.audioCtx.resume();
+}
+function playDing() {
+  if (!state.soundOn || !state.audioCtx) return;
+  try {
+    const ctx = state.audioCtx, osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + .15);
+    gain.gain.setValueAtTime(.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .5);
+    osc.start(); osc.stop(ctx.currentTime + .5);
+  } catch(e) {}
+}
+function toggleSound() {
+  if (!state.soundOn) {
+    initAudio(); state.soundOn = true;
+    document.getElementById('soundIcon').textContent = '🔔';
+    document.getElementById('soundLabel').textContent = 'เสียงเปิด';
+    document.getElementById('soundToggle').classList.remove('off');
+    saveSoundPref(true);
+    setTimeout(playDing, 100);
+    toast('เปิดเสียงแจ้งเตือนแล้ว', '', 'success');
+  } else {
+    state.soundOn = false;
+    document.getElementById('soundIcon').textContent = '🔕';
+    document.getElementById('soundLabel').textContent = 'เปิดเสียง';
+    document.getElementById('soundToggle').classList.add('off');
+    saveSoundPref(false);
+  }
+}
+
+/* ═══════ SESSION (localStorage + cookie) ═══════ */
+const SESSION_KEY = 'tk_session';
+const SESSION_HOURS = 12;
+function saveSession() {
+  const json = JSON.stringify({ user: state.user, superMode: state.superMode, superKey: state.superKey, expires: Date.now() + SESSION_HOURS*3600000 });
+  try { localStorage.setItem(SESSION_KEY, json); } catch(e) {}
+  try { document.cookie = SESSION_KEY + '=' + encodeURIComponent(json) + ';path=/;max-age=' + SESSION_HOURS*3600 + ';SameSite=Lax'; } catch(e) {}
+}
+function loadSession() {
+  let raw = null;
+  try { raw = localStorage.getItem(SESSION_KEY); } catch(e) {}
+  if (!raw) raw = getCookieVal(SESSION_KEY);
+  if (!raw) return null;
+  try {
+    const p = JSON.parse(raw);
+    if (!p.expires || Date.now() > p.expires) { clearSession(); return null; }
+    try { localStorage.setItem(SESSION_KEY, raw); } catch(e) {}
+    return p;
+  } catch(e) { return null; }
+}
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
+  try { document.cookie = SESSION_KEY + '=;path=/;max-age=0'; } catch(e) {}
+}
+function getCookieVal(name) {
+  try {
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : null;
+  } catch(e) { return null; }
+}
+
+/* ═══════ READ-IDS ═══════ */
+function loadReadIds(key) {
+  try { const raw = localStorage.getItem(key); return raw ? new Set(JSON.parse(raw)) : new Set(); } catch(e) { return new Set(); }
+}
+function saveReadIds(key, set) {
+  try { localStorage.setItem(key, JSON.stringify(Array.from(set).slice(-500))); } catch(e) {}
+}
+
+/* ═══════ IDLE LOGOUT (30 นาที) ═══════ */
+const IDLE_MS = 30*60*1000;
+let lastActivity = Date.now();
+function startIdleWatch() {
+  lastActivity = Date.now();
+  ['click','keydown','mousemove','touchstart','scroll'].forEach(ev => document.addEventListener(ev, () => lastActivity = Date.now(), { passive:true }));
+  if (state.idleTimer) clearInterval(state.idleTimer);
+  state.idleTimer = setInterval(() => {
+    if (!state.user && !state.superMode) return;
+    const idle = Date.now() - lastActivity;
+    if (idle > IDLE_MS - 120000 && idle < IDLE_MS - 60000) toast('⏰ ใกล้หมดเวลา', 'จะออกจากระบบใน 2 นาที (ขยับเมาส์เพื่อใช้งานต่อ)', 'warning');
+    if (idle >= IDLE_MS) logout('idle');
+  }, 60000);
+}
+
+/* ═══════ VIEWS ═══════ */
+function showView(id) {
+  ['siteSelectView','loginView','superLoginView','appView'].forEach(v => {
+    document.getElementById(v).style.display = (v === id) ? (id === 'appView' ? 'block' : 'flex') : 'none';
+  });
+}
+
+async function loadSites() {
+  try {
+    const r = await apiGet('getSites');
+    if (!r.ok) throw new Error(r.error);
+    state.sites = r.sites;
+    document.getElementById('siteGrid').innerHTML = r.sites.map(s => `
+      <button class="site-card" onclick="selectSite('${s.id}')">
+        <div class="site-icon">🏭</div>
+        <div class="site-name">${escapeHtml(s.id)}</div>
+        <div style="font-size:10px;color:var(--gray-500);margin-top:2px;">${escapeHtml(s.name)}</div>
+      </button>`).join('') || '<div class="empty-state"><div class="title">ยังไม่มี Site — รอ Super Admin สร้าง</div></div>';
+  } catch(e) {
+    document.getElementById('siteGrid').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div class="title">เชื่อมต่อไม่ได้</div><div style="font-size:12px;">ตรวจสอบ GAS URL / อินเทอร์เน็ต แล้วรีเฟรช</div></div>';
+  }
+}
+
+async function selectSite(siteId) {
+  state.selSiteId = siteId;
+  const site = state.sites.find(s => s.id === siteId);
+  document.getElementById('loginSiteName').textContent = '🏭 ' + (site ? site.name : siteId);
+  showView('loginView');
+  document.getElementById('loginDept').innerHTML = '<option value="">กำลังโหลด...</option>';
+  try {
+    const [d, p] = await Promise.all([apiGet('getDepts', { siteId }), apiGet('getPositions', { siteId })]);
+    state.depts = d.ok ? d.departments : [];
+    state.positions = p.ok ? p.positions : [];
+    document.getElementById('loginDept').innerHTML = '<option value="">-- เลือกแผนก --</option>' +
+      state.depts.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join('');
+  } catch(e) {
+    toast('โหลดข้อมูลไม่สำเร็จ', 'ลองใหม่อีกครั้ง', 'error');
+  }
+}
+
+function backToSites() { showView('siteSelectView'); }
+function showSuperLogin() { showView('superLoginView'); }
+
+function onDeptChange() {
+  const deptId = document.getElementById('loginDept').value;
+  const sel = document.getElementById('loginPosition');
+  if (!deptId) { sel.innerHTML = '<option value="">-- เลือกแผนกก่อน --</option>'; sel.disabled = true; return; }
+  const filtered = state.positions.filter(p => p.deptId === deptId);
+  sel.innerHTML = '<option value="">-- เลือกตำแหน่ง --</option>' + filtered.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('');
+  sel.disabled = false;
+}
+
+async function doLogin() {
+  const deptId = document.getElementById('loginDept').value;
+  const position = document.getElementById('loginPosition').value;
+  const password = document.getElementById('loginPassword').value;
+  if (!deptId || !position || !password) { toast('กรุณากรอกข้อมูล', 'เลือกแผนก ตำแหน่ง และกรอกรหัสผ่าน', 'warning'); return; }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="loading"></span> กำลังเข้าสู่ระบบ...';
+  try {
+    const r = await apiGet('login', { siteId: state.selSiteId, deptId, position, password });
+    if (r.ok) {
+      state.user = r.user;
+      const dept = state.depts.find(d => d.id === deptId);
+      state.user.deptName = dept ? dept.name : '';
+      const site = state.sites.find(s => s.id === state.selSiteId);
+      state.user.siteName = site ? site.name : state.selSiteId;
+      if (state.user.isAdmin) state.user.adminKey = password;
+      // ถ้าไม่ใช่ Admin แต่เป็น approver → เก็บรหัสสำหรับใช้อนุมัติ (จำเฉพาะ session ในหน่วยความจำ ไม่บันทึกในไฟล์)
+      if (!state.user.isAdmin && state.user.isApprover) state.user.approverPassword = password;
+      state.superMode = false; state.superKey = null;
+      saveSession();
+      enterApp();
+    } else {
+      toast('เข้าสู่ระบบไม่สำเร็จ', r.error || 'รหัสผ่านไม่ถูกต้อง', 'error');
+    }
+  } catch(e) { toast('เกิดข้อผิดพลาด', e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
+}
+
+async function doSuperLogin() {
+  const password = document.getElementById('superPassword').value;
+  if (!password) { toast('กรอกรหัสผ่าน', '', 'warning'); return; }
+  const btn = document.getElementById('superLoginBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="loading"></span>...';
+  try {
+    const r = await apiGet('loginSuper', { password });
+    if (r.ok) {
+      state.superMode = true; state.superKey = password; state.user = null;
+      saveSession();
+      enterSuperApp();
+    } else {
+      toast('ไม่สำเร็จ', r.error, 'error');
+    }
+  } catch(e) { toast('เกิดข้อผิดพลาด', e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; }
+}
+
+function logout(silent) {
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  if (state.idleTimer) clearInterval(state.idleTimer);
+  clearSession();
+  state.user = null; state.superMode = false; state.superKey = null;
+  state.pollTimer = null; state.idleTimer = null; state.primed = false;
+  state.knownSnapshot = {}; state.notifTickets = []; state.updatedTicketIds = new Set();
+  document.getElementById('topbarRight').style.display = 'none';
+  document.getElementById('appTitle').textContent = 'Ticket System';
+  document.getElementById('siteBadge').textContent = '🎫';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('superPassword').value = '';
+  showView('siteSelectView');
+  if (silent === 'idle') toast('ออกจากระบบอัตโนมัติ', 'ไม่มีการใช้งานเกิน 30 นาที', 'warning');
+}
+
+/* ═══════ MASTER DATA CACHE (ไม่แตะ login — ใช้หลัง login แล้วเท่านั้น) ═══════
+   cache แผนก/ตำแหน่ง/BU/หมวดหมู่ ใน localStorage เพื่อให้เปิดแอปไว
+   - โหลดจาก cache ทันที (ถ้ามี) แล้วดึงสดมาอัปเดตเบื้องหลัง
+   - invalidate ทันทีเมื่อ IT Admin แก้ไข master data
+   หมายเหตุ: login ไม่ใช้ cache นี้เลย — ดึงสดเสมอ */
+const CACHE_TTL_MS = 6 * 3600000; // 6 ชม.
+function cacheKey(siteId, type) { return 'tk_cache_' + type + '_' + siteId; }
+function readCache(siteId, type) {
+  try {
+    const raw = localStorage.getItem(cacheKey(siteId, type));
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj.t || Date.now() - obj.t > CACHE_TTL_MS) return null;
+    return obj.d;
+  } catch(e) { return null; }
+}
+function writeCache(siteId, type, data) {
+  try { localStorage.setItem(cacheKey(siteId, type), JSON.stringify({ t: Date.now(), d: data })); } catch(e) {}
+}
+function invalidateCache(siteId, type) {
+  try { localStorage.removeItem(cacheKey(siteId, type)); } catch(e) {}
+}
+/** โหลด master data: ใช้ cache ก่อน (เร็ว) + ดึงสดมาอัปเดตเบื้องหลัง */
+async function loadMasterData(siteId, opts) {
+  opts = opts || {};
+  // 1) ลอง cache ก่อน — เปิดแอปไวทันที
+  const cCat = readCache(siteId, 'cat');
+  const cBU = readCache(siteId, 'bu');
+  const cUI = readCache(siteId, 'ui');
+  if (cCat) state.categories = cCat;
+  if (cBU) state.bus = cBU;
+  if (cUI) state.uiConfig = cUI;
+  const hadCache = cCat && cBU && cUI;
+
+  // 2) ดึงสด (ถ้าไม่มี cache = รอ, ถ้ามี cache = เบื้องหลัง)
+  const fetchFresh = async () => {
+    try {
+      const [c, b, u] = await Promise.all([
+        apiGet('getCategories', { siteId }),
+        apiGet('getBUs', { siteId }),
+        apiGet('getUIConfig', { siteId })
+      ]);
+      if (c.ok) { state.categories = c.categories; writeCache(siteId, 'cat', c.categories); }
+      if (b.ok) { state.bus = b.bus; writeCache(siteId, 'bu', b.bus); }
+      if (u.ok) { state.uiConfig = u.config || {}; writeCache(siteId, 'ui', state.uiConfig); }
+      if (hadCache && opts.onRefresh) opts.onRefresh();
+    } catch(e) {}
+  };
+  if (hadCache) { fetchFresh(); } // เบื้องหลัง ไม่รอ
+  else { await fetchFresh(); }     // ครั้งแรก ต้องรอ
+}
+
+/* ═══════ ENTER APP ═══════ */
+async function enterApp() {
+  showView('appView');
+  document.getElementById('topbarRight').style.display = 'flex';
+  document.getElementById('btnChangePw').style.display = '';
+  document.getElementById('siteBadge').textContent = state.user.siteId;
+  document.getElementById('appTitle').textContent = 'Ticket System';
+  document.getElementById('userInfo').textContent = state.user.position + ' • ' + state.user.siteName;
+  // โหลด master data (มี cache — เปิดไว)
+  await loadMasterData(state.user.siteId, {
+    onRefresh: () => { if (state.currentTab === 'submit') { const el = document.getElementById('tab-submit'); if (el) el.innerHTML = renderSubmitForm(); setupDraftAutoSave(); } }
+  });
+  startIdleWatch();
+  if (state.user.isAdmin) {
+    document.getElementById('bellBtn').style.display = 'block';
+    renderAdminApp();
+    startAdminPoll();
+  } else {
+    document.getElementById('bellBtn').style.display = 'none';
+    renderUserApp();
+    startUserPoll();
+  }
+}
+
+/* ═══════ EMPLOYEE APP ═══════ */
+function renderUserApp() {
+  const isApr = state.user.isApprover;
+  document.getElementById('mainContent').innerHTML = `
+    <div class="tabs">
+      <button class="tab active" data-tab="submit" onclick="switchTab('submit')">📝 แจ้งปัญหา</button>
+      <button class="tab" data-tab="myTickets" onclick="switchTab('myTickets')">📋 Ticket ของฉัน <span class="tab-badge" id="myTicketsBadge" style="display:none;">0</span></button>
+      ${isApr ? '<button class="tab" data-tab="pendingAppr" onclick="switchTab(\'pendingAppr\')">🛡️ รออนุมัติ <span class="tab-badge" id="pendingApprBadge" style="display:none;background:#dc2626;">0</span></button>' : ''}
+    </div>
+    <div class="tab-content active" id="tab-submit">${renderSubmitForm()}</div>
+    <div class="tab-content" id="tab-myTickets"></div>
+    ${isApr ? '<div class="tab-content" id="tab-pendingAppr"></div>' : ''}`;
+  state.currentTab = 'submit';
+  initDraftRestore();
+  setupDraftAutoSave();
+  if (isApr) startApproverPoll();
+}
+
+function renderSubmitForm() {
+  const mains = [...new Set(state.categories.map(c => c.main))];
+  const showBU = uiShow('bu'), showPrio = uiShow('priority'), showImage = uiShow('image'), showPhone = uiShow('phone'), showFile = uiShow('file');
+  return `
+    <div class="card">
+      <div class="card-title">📝 แจ้งปัญหาใหม่ — ${escapeHtml(state.user.siteName)}</div>
+      <div id="draftBanner"></div>
+      ${showBU ? `<div class="form-group">
+        <label>BU <span class="req">*</span></label>
+        <select id="f_bu" class="form-control">
+          <option value="">-- เลือก BU --</option>
+          ${state.bus.map(b => `<option value="${escapeHtml(b.id + ' ' + b.name)}">${escapeHtml(b.id)} — ${escapeHtml(b.name)}</option>`).join('')}
+        </select>
+        ${state.bus.length === 0 ? '<div style="font-size:11px;color:var(--warning);margin-top:4px;">⚠️ ยังไม่มี BU — แจ้ง IT Admin เพิ่มในเมนูจัดการ</div>' : ''}
+      </div>` : ''}
+      <div class="form-group"><label>ชื่อปัญหา <span class="req">*</span></label>
+        <input type="text" id="f_title" class="form-control" placeholder="เช่น Router ห้อง Pack ใช้งานไม่ได้"></div>
+      <div class="form-group"><label>หมวดหมู่หลัก <span class="req">*</span></label>
+        <select id="f_main" class="form-control" onchange="onMainCatChange()">
+          <option value="">-- เลือกหมวดหมู่ --</option>
+          ${mains.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+        </select></div>
+      <div class="form-group"><label>หมวดหมู่ย่อย <span class="req">*</span></label>
+        <select id="f_sub" class="form-control" disabled><option value="">-- เลือกหมวดหมู่หลักก่อน --</option></select></div>
+      ${showPrio ? `<div class="form-group"><label>ระดับความเร่งด่วน <span class="req">*</span></label>
+        <div class="priority-group" id="prioGroup">
+          <button type="button" class="priority-btn urgent" data-prio="urgent" onclick="selectPriority('urgent')">🔴 เร่งด่วน</button>
+          <button type="button" class="priority-btn normal active" data-prio="normal" onclick="selectPriority('normal')">🟡 ปกติ</button>
+          <button type="button" class="priority-btn low" data-prio="low" onclick="selectPriority('low')">🟢 ไม่เร่งด่วน</button>
+        </div></div>` : ''}
+      <div class="form-group"><label>รายละเอียด <span class="req">*</span></label>
+        <textarea id="f_desc" class="form-control" placeholder="อธิบายปัญหา อาการ และเวลาที่เกิด"></textarea></div>
+      ${(showImage || showFile) ? `<div class="attach-row" style="display:grid;grid-template-columns:${showImage && showFile ? '1fr 1fr' : '1fr'};gap:12px;">
+        ${showImage ? `<div class="form-group" style="margin-bottom:0;"><label>แนบรูปภาพ (ถ้ามี)</label>
+          <label class="image-upload" for="f_image">
+            <div style="font-size:28px;">📷</div>
+            <div style="margin-top:4px;color:var(--gray-500);font-size:13px;">คลิกเพื่อเลือกรูปภาพ</div>
+          </label>
+          <input type="file" id="f_image" accept="image/*" style="display:none;" onchange="onImageSelect(event)">
+          <img id="imagePreview" class="image-preview" style="display:none;"></div>` : ''}
+        ${showFile ? `<div class="form-group" style="margin-bottom:0;"><label>แนบไฟล์เอกสาร (ถ้ามี)</label>
+          <label class="image-upload" for="f_file" id="fileDropLabel">
+            <div style="font-size:28px;">📎</div>
+            <div style="margin-top:4px;color:var(--gray-500);font-size:13px;">PDF, Word, Excel, PPT, txt, csv</div>
+            <div style="margin-top:2px;color:var(--gray-400);font-size:11px;">สูงสุด 3MB</div>
+          </label>
+          <input type="file" id="f_file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" style="display:none;" onchange="onFileSelect(event)">
+          <div id="filePreview" style="display:none;margin-top:8px;padding:10px 12px;background:var(--gray-50);border-radius:8px;font-size:13px;align-items:center;justify-content:space-between;"></div></div>` : ''}
+      </div>` : ''}
+      <div class="form-group"><label>ชื่อผู้แจ้ง <span class="req">*</span></label>
+        <input type="text" id="f_reporter" class="form-control" placeholder="ชื่อ-นามสกุล"></div>
+      ${showPhone ? `<div class="form-group"><label>เบอร์โทรศัพท์ <span class="req">*</span></label>
+        <input type="tel" id="f_phone" class="form-control" placeholder="08x-xxx-xxxx"></div>` : ''}
+      <button class="btn btn-primary btn-block" id="submitBtn" onclick="submitTicket()">ส่ง Ticket</button>
+    </div>`;
+}
+
+function onMainCatChange() {
+  const main = document.getElementById('f_main').value;
+  const sel = document.getElementById('f_sub');
+  if (!main) { sel.innerHTML = '<option value="">-- เลือกหมวดหมู่หลักก่อน --</option>'; sel.disabled = true; return; }
+  const subs = state.categories.filter(c => c.main === main);
+  sel.innerHTML = '<option value="">-- เลือก --</option>' + subs.map(c => `<option value="${escapeHtml(c.sub)}">${escapeHtml(c.sub)}</option>`).join('');
+  sel.disabled = false;
+  saveDraft();
+}
+function selectPriority(p) {
+  const group = document.getElementById('prioGroup');
+  if (!group) return;
+  group.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+  const btn = group.querySelector(`.priority-btn[data-prio="${p}"]`);
+  if (btn) btn.classList.add('active');
+  saveDraft();
+}
+
+let currentImageData = null;
+async function onImageSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const compressed = await compressImage(file);
+  currentImageData = compressed;
+  const img = document.getElementById('imagePreview');
+  img.src = compressed.dataUrl; img.style.display = 'block';
+}
+function compressImage(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > 1200) { h = h*1200/w; w = 1200; }
+        if (h > 1200) { w = w*1200/h; h = 1200; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', .75);
+        resolve({ dataUrl, base64: dataUrl.split(',')[1], mimeType:'image/jpeg', filename:file.name });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ═══════ ไฟล์เอกสารแนบ (≤3MB) ═══════ */
+let currentFileData = null;
+const ALLOWED_EXT = ['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','csv'];
+const MAX_FILE_BYTES = 3 * 1024 * 1024; // 3MB
+function fileIcon(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (ext === 'pdf') return '📄';
+  if (ext === 'doc' || ext === 'docx') return '📝';
+  if (ext === 'xls' || ext === 'xlsx' || ext === 'csv') return '📊';
+  if (ext === 'ppt' || ext === 'pptx') return '📑';
+  return '📎';
+}
+function fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(0) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+async function onFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (ALLOWED_EXT.indexOf(ext) === -1) {
+    toast('ไฟล์ไม่รองรับ', 'อนุญาต: ' + ALLOWED_EXT.join(', '), 'warning');
+    e.target.value = ''; return;
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    toast('ไฟล์ใหญ่เกินไป', 'ขนาด ' + fmtBytes(file.size) + ' — สูงสุด 3MB', 'warning');
+    e.target.value = ''; return;
+  }
+  // อ่านเป็น base64
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  currentFileData = { base64, filename: file.name, mimeType: file.type || 'application/octet-stream', size: file.size };
+  const box = document.getElementById('filePreview');
+  if (box) {
+    box.style.display = 'flex';
+    box.innerHTML = `
+      <span style="display:flex;align-items:center;gap:8px;overflow:hidden;">
+        <span style="font-size:20px;">${fileIcon(file.name)}</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(file.name)}</span>
+        <span style="color:var(--gray-500);font-size:11px;white-space:nowrap;">${fmtBytes(file.size)}</span>
+      </span>
+      <button type="button" class="btn btn-danger btn-sm" onclick="removeSelectedFile()" style="flex-shrink:0;">✕</button>`;
+  }
+  saveDraft();
+}
+function removeSelectedFile() {
+  currentFileData = null;
+  const inp = document.getElementById('f_file'); if (inp) inp.value = '';
+  const box = document.getElementById('filePreview'); if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+}
+
+async function submitTicket() {
+  const bu = document.getElementById('f_bu')?.value || '';
+  const title = document.getElementById('f_title').value.trim();
+  const main = document.getElementById('f_main').value;
+  const sub = document.getElementById('f_sub').value;
+  const desc = document.getElementById('f_desc').value.trim();
+  const reporter = document.getElementById('f_reporter').value.trim();
+  const phone = document.getElementById('f_phone')?.value.trim() || '';
+  const prioBtn = document.querySelector('#prioGroup .priority-btn.active');
+  const prio = prioBtn ? prioBtn.dataset.prio : 'normal';
+  // validate เฉพาะ field ที่โชว์อยู่
+  if (!title || !main || !sub || !desc || !reporter) {
+    toast('กรุณากรอกข้อมูล', 'ช่องที่มี * ต้องกรอกครบ', 'warning'); return;
+  }
+  if (uiShow('bu') && !bu) { toast('กรุณาเลือก BU', '', 'warning'); return; }
+  if (uiShow('phone') && !phone) { toast('กรุณากรอกเบอร์โทร', '', 'warning'); return; }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="loading"></span> กำลังส่ง...';
+  try {
+    let imageUrl = '';
+    if (currentImageData) {
+      btn.innerHTML = '<span class="loading"></span> อัปโหลดรูป...';
+      const up = await apiPost('uploadImage', currentImageData);
+      if (up.ok) imageUrl = up.url;
+    }
+    let fileUrl = '', fileName = '';
+    if (currentFileData) {
+      btn.innerHTML = '<span class="loading"></span> อัปโหลดไฟล์...';
+      const uf = await apiPost('uploadFile', {
+        base64: currentFileData.base64, filename: currentFileData.filename, mimeType: currentFileData.mimeType
+      });
+      if (uf.ok) { fileUrl = uf.url; fileName = uf.fileName || currentFileData.filename; }
+      else { toast('อัปโหลดไฟล์ไม่สำเร็จ', uf.error || '', 'error'); btn.disabled = false; btn.textContent = 'ส่ง Ticket'; return; }
+    }
+    btn.innerHTML = '<span class="loading"></span> บันทึก...';
+    const r = await apiPost('submitTicket', {
+      siteId: state.user.siteId, deptId: state.user.deptId, deptName: state.user.deptName,
+      category: main, subCategory: sub, title, description: desc, imageUrl,
+      reporterName: reporter, position: state.user.position, priority: prio,
+      bu, phone, fileUrl, fileName
+    });
+    if (r.ok) {
+      toast('ส่ง Ticket สำเร็จ', 'หมายเลข: ' + r.ticketId, 'success');
+      clearDraft(); resetSubmitForm();
+    } else toast('ส่งไม่สำเร็จ', r.error || '', 'error');
+  } catch(e) { toast('เกิดข้อผิดพลาด', e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'ส่ง Ticket'; }
+}
+
+function resetSubmitForm() {
+  ['f_title','f_desc','f_reporter','f_phone'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const buEl = document.getElementById('f_bu'); if (buEl) buEl.value = '';
+  document.getElementById('f_main').value = '';
+  document.getElementById('f_sub').innerHTML = '<option value="">-- เลือกหมวดหมู่หลักก่อน --</option>';
+  document.getElementById('f_sub').disabled = true;
+  const prev = document.getElementById('imagePreview'); if (prev) prev.style.display = 'none';
+  const img = document.getElementById('f_image'); if (img) img.value = '';
+  currentImageData = null;
+  removeSelectedFile();
+  const prioBtn = document.querySelector('#prioGroup .priority-btn.active');
+  if (prioBtn) selectPriority('normal');
+}
+
+/* ═══════ DRAFT ═══════ */
+const DRAFT_KEY = 'tk_draft';
+function saveDraft() {
+  const d = {
+    bu: document.getElementById('f_bu')?.value || '',
+    title: document.getElementById('f_title')?.value || '',
+    main: document.getElementById('f_main')?.value || '',
+    sub: document.getElementById('f_sub')?.value || '',
+    desc: document.getElementById('f_desc')?.value || '',
+    reporter: document.getElementById('f_reporter')?.value || '',
+    phone: document.getElementById('f_phone')?.value || '',
+    prio: document.querySelector('#prioGroup .priority-btn.active')?.dataset.prio || 'normal'
+  };
+  if (d.title || d.desc || d.reporter) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+}
+function setupDraftAutoSave() {
+  ['f_title','f_desc','f_reporter','f_phone','f_main','f_sub','f_bu'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', saveDraft);
+  });
+}
+function clearDraft() { sessionStorage.removeItem(DRAFT_KEY); const b = document.getElementById('draftBanner'); if (b) b.innerHTML = ''; }
+function initDraftRestore() {
+  if (!sessionStorage.getItem(DRAFT_KEY)) return;
+  document.getElementById('draftBanner').innerHTML = `
+    <div class="draft-banner"><span>💾 พบข้อมูลที่ยังไม่ได้ส่ง</span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-primary btn-sm" onclick="restoreDraft()">กู้คืน</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearDraft()">ทิ้ง</button>
+      </div></div>`;
+}
+function restoreDraft() {
+  const raw = sessionStorage.getItem(DRAFT_KEY);
+  if (!raw) return;
+  const d = JSON.parse(raw);
+  document.getElementById('f_bu').value = d.bu || '';
+  document.getElementById('f_title').value = d.title || '';
+  document.getElementById('f_main').value = d.main || '';
+  onMainCatChange();
+  setTimeout(() => { document.getElementById('f_sub').value = d.sub || ''; }, 50);
+  document.getElementById('f_desc').value = d.desc || '';
+  document.getElementById('f_reporter').value = d.reporter || '';
+  document.getElementById('f_phone').value = d.phone || '';
+  if (d.prio) selectPriority(d.prio);
+  document.getElementById('draftBanner').innerHTML = '';
+}
+
+/* ═══════ MY TICKETS ═══════ */
+async function loadMyTickets() {
+  const c = document.getElementById('tab-myTickets');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span> กำลังโหลด...</div>';
+  const r = await apiGet('getTickets', { siteId: state.user.siteId, deptId: state.user.deptId });
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div class="title">โหลดไม่สำเร็จ</div></div>'; return; }
+  state.tickets = r.tickets;
+  renderMyTickets();
+}
+
+function renderMyTickets() {
+  const c = document.getElementById('tab-myTickets');
+  if (state.tickets.length === 0) {
+    c.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div class="title">ยังไม่มี Ticket</div></div>'; return;
+  }
+  const g = { pending:[], inProgress:[], resolved:[], pendingApproval:[], approved:[], rejected:[] };
+  state.tickets.forEach(t => (g[t.status] || g.pending).push(t));
+  const myName = state.user.position;
+  const myCount = state.tickets.filter(t => t.reporterName === myName).length;
+  c.innerHTML = `
+    <div class="filter-bar">
+      <div class="form-group" style="flex:2;min-width:180px;">
+        <label>🔍 ค้นหา</label>
+        <input type="text" class="form-control" id="myFilterSearch" placeholder="คำค้น..." oninput="renderMyTicketsList()">
+      </div>
+      <div class="form-group"><label>สถานะ</label>
+        <select class="form-control" id="myFilterStatus" onchange="renderMyTicketsList()">
+          <option value="">ทั้งหมด (${state.tickets.length})</option>
+          <option value="pending">รอดำเนินการ (${g.pending.length})</option>
+          <option value="inProgress">กำลังดำเนินการ (${g.inProgress.length})</option>
+          <option value="resolved">แล้วเสร็จ (${g.resolved.length})</option>
+          ${g.pendingApproval.length ? `<option value="pendingApproval">⏳ รออนุมัติ (${g.pendingApproval.length})</option>` : ''}
+          ${g.approved.length ? `<option value="approved">✅ อนุมัติแล้ว (${g.approved.length})</option>` : ''}
+          ${g.rejected.length ? `<option value="rejected">❌ ไม่อนุมัติ (${g.rejected.length})</option>` : ''}
+        </select></div>
+      <div class="form-group"><label>&nbsp;</label>
+        <button class="btn btn-secondary" onclick="loadMyTickets()">🔄</button></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 4px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none;">
+        <input type="checkbox" id="myOnlyChk" onchange="renderMyTicketsList()" style="width:16px;height:16px;accent-color:var(--primary);">
+        🙋 เฉพาะที่ฉันแจ้ง (${myCount})
+      </label>
+      <span id="myListCount" style="font-size:12px;color:var(--gray-500);"></span>
+    </div>
+    <div class="ticket-list" id="myTicketList"></div>
+    <div id="myPager" style="text-align:center;margin-top:12px;"></div>`;
+  state.myPage = 1;
+  renderMyTicketsList();
+}
+
+function ticketMatchesSearch(t, q) {
+  if (!q) return true;
+  const hay = [t.ticketId,t.title,t.description,t.reporterName,t.category,t.subCategory,t.deptName,t.adminNote,t.bu,t.phone,t.assignedTo]
+    .map(x => String(x||'').toLowerCase()).join(' ');
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+}
+
+const MY_PAGE_SIZE = 50;
+function renderMyTicketsList() {
+  const f = document.getElementById('myFilterStatus')?.value || '';
+  const q = document.getElementById('myFilterSearch')?.value.trim() || '';
+  const onlyMine = document.getElementById('myOnlyChk')?.checked || false;
+  const myName = state.user.position;
+  const list = document.getElementById('myTicketList');
+  const pager = document.getElementById('myPager');
+  const countEl = document.getElementById('myListCount');
+  let filtered = f ? state.tickets.filter(t => t.status === f) : state.tickets;
+  if (onlyMine) filtered = filtered.filter(t => t.reporterName === myName);
+  filtered = filtered.filter(t => ticketMatchesSearch(t, q));
+  if (countEl) countEl.textContent = 'พบ ' + filtered.length + ' รายการ';
+  if (!filtered.length) { list.innerHTML = '<div class="empty-state"><div class="title">ไม่มีรายการ</div></div>'; if (pager) pager.innerHTML = ''; return; }
+  const page = state.myPage || 1;
+  const shown = filtered.slice(0, page * MY_PAGE_SIZE);
+  list.innerHTML = shown.map(t => ticketCardHTML(t, { highlight: state.updatedTicketIds.has(t.ticketId) })).join('');
+  if (pager) {
+    if (shown.length < filtered.length) pager.innerHTML = `<button class="btn btn-secondary" onclick="loadMoreMy()">โหลดเพิ่ม (${shown.length}/${filtered.length})</button>`;
+    else pager.innerHTML = '';
+  }
+}
+function loadMoreMy() { state.myPage = (state.myPage || 1) + 1; renderMyTicketsList(); }
+
+/** เช็คว่า field นี้ควรโชว์ไหม ตาม UI config ของ site (default = โชว์) */
+function uiShow(key) {
+  const cfg = state.uiConfig || {};
+  return cfg[key] !== false; // ไม่มีค่า หรือ true = โชว์, false = ซ่อน
+}
+function ticketCardHTML(t, opt = {}) {
+  const icons = { pending:'⏳', inProgress:'🔧', resolved:'✅' };
+  const showSLA = uiShow('sla');
+  const age = showSLA ? ageInfo(t.createdAt, t.status, t.priority, t.category, t.subCategory) : null;
+  const cc = parseInt(t.commentCount) || 0;
+  return `
+    <div class="ticket-item ${opt.highlight ? 'new-update' : ''} ${age && age.overdue ? 'overdue' : ''}" onclick="openTicketDetail('${t.ticketId}'${opt.siteId ? `,'${opt.siteId}'` : ''})">
+      ${opt.selectable ? `<input type="checkbox" class="ticket-check" data-tid="${t.ticketId}" onclick="event.stopPropagation();toggleSelect('${t.ticketId}',this)" ${state.selectedTickets.has(t.ticketId) ? 'checked' : ''}>` : ''}
+      <div class="ticket-icon ${t.status}">${icons[t.status] || '⏳'}</div>
+      <div class="ticket-body">
+        <div class="ticket-title">${escapeHtml(t.title)}
+          ${cc > 0 && uiShow('comment') ? `<span class="comment-badge">💬 ${cc}</span>` : ''}
+          ${age ? `<span class="age-badge ${age.cls}">${age.label}</span>` : ''}
+          ${t.status === 'resolved' && t.resolveDurationHrs !== '' && t.resolveDurationHrs != null ? `<span class="age-badge" style="background:#d1fae5;color:#065f46;">✓ ${fmtDuration(t.resolveDurationHrs)}</span>` : ''}
+          ${t.rating && uiShow('rating') ? `<span style="font-size:11px;color:#f59e0b;">⭐${t.rating}</span>` : ''}
+        </div>
+        <div class="ticket-meta">
+          ${uiShow('priority') ? `<span><span class="priority-dot priority-${t.priority}"></span>${t.priority === 'urgent' ? 'เร่งด่วน' : t.priority === 'low' ? 'ไม่เร่งด่วน' : 'ปกติ'}</span>` : ''}
+          <span>📂 ${escapeHtml(t.category)} - ${escapeHtml(t.subCategory)}</span>
+          ${t.bu && uiShow('bu') ? `<span>🏷️ ${escapeHtml(t.bu)}</span>` : ''}
+          <span>🏢 ${escapeHtml(t.deptName)}</span>
+          ${t.assignedTo && uiShow('assignee') ? `<span>👨‍💻 ${escapeHtml(t.assignedTo)}</span>` : ''}
+          <span>🕒 ${escapeHtml(String(t.createdAt))}</span>
+        </div>
+      </div>
+      <span class="status-badge status-${t.status}">${statusText(t.status)}</span>
+    </div>`;
+}
+
+function fmtDuration(hrs) {
+  const h = parseFloat(hrs);
+  if (isNaN(h)) return '';
+  if (h < 1) return Math.round(h * 60) + ' นาที';
+  if (h < 24) return h + ' ชม.';
+  const d = Math.floor(h / 24), rem = Math.round(h % 24);
+  return d + ' วัน' + (rem > 0 ? ' ' + rem + ' ชม.' : '');
+}
+
+function switchTab(tab) {
+  state.currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+  if (tab === 'myTickets') { loadMyTickets(); state.updatedTicketIds.clear(); updateUserBadge(); }
+  if (tab === 'dashboard') loadDashboard();
+  if (tab === 'allTickets') loadAdminTickets();
+  if (tab === 'export') loadExportPanel();
+  if (tab === 'manage') loadManagePanel();
+  if (tab === 'uiSetting') loadUISettingPanel();
+  if (tab === 'archive') loadArchive();
+  if (tab === 'pendingAppr') loadPendingApprovals();
+  if (tab === 'spSites') loadSuperSites();
+  if (tab === 'spTrash') loadTrash();
+  if (tab === 'spLog') loadAuditLog();
+}
+
+/* ═══════ TICKET DETAIL + COMMENTS + RATING ═══════ */
+async function openTicketDetail(ticketId, siteId) {
+  const sid = siteId || (state.user ? state.user.siteId : null);
+  if (!sid) return;
+  const r = await apiGet('getTicket', { siteId: sid, ticketId });
+  if (!r.ok) { toast('ไม่พบ Ticket', '', 'error'); return; }
+  state.currentTicket = r.ticket;
+  state.currentTicket._siteId = sid;
+  state.pendingStatus = r.ticket.status;
+
+  if (state.user && state.user.isAdmin) markTicketRead(ticketId);
+  else if (state.user) {
+    state.updatedTicketIds.delete(ticketId);
+    updateUserBadge();
+  }
+  renderTicketModal();
+  document.getElementById('ticketModal').classList.add('show');
+  loadComments();
+  loadTimeline();
+}
+
+async function loadTimeline() {
+  const t = state.currentTicket;
+  const box = document.getElementById('timelineBox');
+  if (!box) return;
+  try {
+    const r = await apiGet('getStatusHistory', { siteId: t._siteId, ticketId: t.ticketId });
+    const steps = [];
+    steps.push({ icon:'📝', label:'แจ้งปัญหา', at: t.createdAt, by: t.reporterName });
+    if (r.ok && r.history.length) {
+      r.history.forEach(h => {
+        const icon = h.to === 'inProgress' ? '🔧' : h.to === 'resolved' ? '✅' : '⏳';
+        steps.push({ icon, label: statusText(h.to), at: h.at, by: h.by });
+      });
+    }
+    box.innerHTML = steps.map((s, i) => `
+      <div style="display:flex;gap:8px;align-items:flex-start;${i < steps.length-1 ? 'padding-bottom:8px;' : ''}">
+        <span style="font-size:14px;">${s.icon}</span>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;">${escapeHtml(s.label)}</div>
+          <div style="font-size:10px;color:var(--gray-500);">${escapeHtml(String(s.at))} ${s.by ? '• ' + escapeHtml(s.by) : ''}</div>
+        </div>
+      </div>`).join('');
+  } catch(e) { box.innerHTML = '<span style="color:var(--gray-400);font-size:12px;">โหลดไทม์ไลน์ไม่สำเร็จ</span>'; }
+}
+
+function renderTicketModal() {
+  const t = state.currentTicket;
+  const isAdmin = state.user && state.user.isAdmin;
+  const isOwner = state.user && !state.user.isAdmin;
+  document.getElementById('modalTitle').textContent = 'Ticket: ' + t.ticketId;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="detail-row"><div class="label">ชื่อปัญหา</div><div class="value"><strong>${escapeHtml(t.title)}</strong></div></div>
+    <div class="detail-row"><div class="label">สถานะ</div><div class="value"><span class="status-badge status-${t.status}">${statusText(t.status)}</span></div></div>
+    ${uiShow('priority') ? `<div class="detail-row"><div class="label">ความเร่งด่วน</div><div class="value">${prioText(t.priority)}</div></div>` : ''}
+    <div class="detail-row"><div class="label">หมวดหมู่</div><div class="value">${escapeHtml(t.category)} → ${escapeHtml(t.subCategory)}</div></div>
+    ${t.bu && uiShow('bu') ? `<div class="detail-row"><div class="label">BU</div><div class="value">${escapeHtml(t.bu)}</div></div>` : ''}
+    <div class="detail-row"><div class="label">แผนก</div><div class="value">${escapeHtml(t.deptName)}</div></div>
+    <div class="detail-row"><div class="label">ผู้แจ้ง</div><div class="value">${escapeHtml(t.reporterName)} (${escapeHtml(t.position)})</div></div>
+    ${t.phone && uiShow('phone') ? `<div class="detail-row"><div class="label">เบอร์โทร</div><div class="value">📞 <a href="tel:${escapeHtml(t.phone)}">${escapeHtml(t.phone)}</a></div></div>` : ''}
+    ${t.assignedTo && uiShow('assignee') ? `<div class="detail-row"><div class="label">ผู้รับผิดชอบ</div><div class="value">👨‍💻 ${escapeHtml(t.assignedTo)}</div></div>` : ''}
+    <div class="detail-row"><div class="label">เวลาแจ้ง</div><div class="value">${escapeHtml(String(t.createdAt))}</div></div>
+    ${t.startedAt ? `<div class="detail-row"><div class="label">เริ่มดำเนินการ</div><div class="value">${escapeHtml(String(t.startedAt))}</div></div>` : ''}
+    ${t.resolvedAt ? `<div class="detail-row"><div class="label">ปิดงาน</div><div class="value">${escapeHtml(String(t.resolvedAt))} ${t.resolveDurationHrs !== '' && t.resolveDurationHrs != null ? `<span style="color:#065f46;font-weight:600;">(ใช้เวลา ${fmtDuration(t.resolveDurationHrs)})</span>` : ''}</div></div>` : ''}
+    ${t.approvedBy ? `<div class="detail-row"><div class="label">${t.status === 'approved' ? 'อนุมัติโดย' : (t.status === 'rejected' ? 'ไม่อนุมัติโดย' : 'ตัดสินโดย')}</div><div class="value">${escapeHtml(t.approvedBy)} • ${escapeHtml(String(t.approvedAt))}</div></div>` : ''}
+    ${t.rejectionReason ? `<div class="detail-row"><div class="label" style="color:#991b1b;">เหตุผลที่ไม่อนุมัติ</div><div class="value" style="color:#991b1b;white-space:pre-wrap;padding:8px;background:#fee2e2;border-radius:6px;">${escapeHtml(t.rejectionReason)}</div></div>` : ''}
+    <div class="detail-row"><div class="label">อัปเดตล่าสุด</div><div class="value">${escapeHtml(String(t.updatedAt))}</div></div>
+    <div class="detail-row"><div class="label">รายละเอียด</div><div class="value" style="white-space:pre-wrap;">${escapeHtml(t.description)}</div></div>
+    ${uiShow('timeline') ? `<div class="detail-row"><div class="label">ไทม์ไลน์</div><div class="value" id="timelineBox"><span style="color:var(--gray-400);font-size:12px;">กำลังโหลด...</span></div></div>` : ''}
+    ${t.imageUrl ? `<div class="detail-row"><div class="label">รูปภาพ</div><div class="value"><a href="${t.imageUrl}" target="_blank"><img src="${t.imageUrl}" style="max-width:100%;max-height:280px;border-radius:8px;" onerror="this.outerHTML='<a href=&quot;${t.imageUrl}&quot; target=&quot;_blank&quot;>🔗 เปิดรูปภาพ</a>'"></a></div></div>` : ''}
+    ${t.fileUrl && uiShow('file') ? `<div class="detail-row"><div class="label">ไฟล์แนบ</div><div class="value">
+      <a href="${t.fileUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 14px;background:var(--gray-50);border-radius:8px;text-decoration:none;color:var(--gray-800);border:1px solid var(--gray-200);">
+        <span style="font-size:22px;">${fileIcon(t.fileName || 'file')}</span>
+        <span style="font-weight:600;">${escapeHtml(t.fileName || 'ดาวน์โหลดไฟล์')}</span>
+        <span style="color:var(--primary);font-size:13px;">⬇️ ดาวน์โหลด</span>
+      </a></div></div>` : ''}
+    ${isAdmin ? `
+      ${t.status === 'pendingApproval' ? `
+      <div class="detail-row"><div class="label">🛡️ อนุมัติ</div><div class="value">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-success" style="flex:1;" onclick="doApprove('${t.ticketId}');document.getElementById('ticketModal').classList.remove('show');">✅ อนุมัติ (แทน)</button>
+          <button class="btn btn-danger" style="flex:1;" onclick="doReject('${t.ticketId}');document.getElementById('ticketModal').classList.remove('show');">❌ ไม่อนุมัติ</button>
+        </div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:4px;">💡 คุณเป็น IT Admin — ระบบจะบันทึกว่า "อนุมัติแทน"</div>
+      </div></div>` : `
+      <div class="detail-row"><div class="label">เปลี่ยนสถานะ</div><div class="value">
+        <div class="status-selector">
+          <button class="status-btn" data-status="pending" onclick="setPendingStatus('pending')">⏳ รอ</button>
+          <button class="status-btn" data-status="inProgress" onclick="setPendingStatus('inProgress')">🔧 กำลังทำ</button>
+          <button class="status-btn" data-status="resolved" onclick="setPendingStatus('resolved')">✅ เสร็จ</button>
+        </div></div></div>`}
+      ${uiShow('assignee') ? `<div class="detail-row"><div class="label">ผู้รับผิดชอบ</div><div class="value">
+        <input type="text" class="form-control" id="modalAssignee" placeholder="ชื่อ IT ที่รับงาน (ระบบล็อกชื่อคนแรกที่ทำให้อัตโนมัติ)" value="${escapeHtml(t.assignedTo||'')}"></div></div>` : ''}
+      <div class="detail-row"><div class="label">หมายเหตุ Admin</div><div class="value">
+        <textarea class="form-control" id="modalAdminNote" placeholder="บันทึกความคืบหน้า / วิธีแก้">${escapeHtml(t.adminNote||'')}</textarea></div></div>
+      <div class="detail-row"><div class="label">📤 ส่งต่อ CJ IT</div><div class="value">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="copyCJPattern('${t.ticketId}')">📋 คัดลอกข้อความ</button>
+          <button class="btn btn-secondary" onclick="downloadCJWord('${t.ticketId}')">📄 ดาวน์โหลด Word</button>
+        </div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">💡 ใช้ format มาตรฐาน CJ IT — copy ไปแปะแชท/อีเมล หรือแนบไฟล์ส่ง CP ได้เลย</div>
+      </div></div>
+    ` : (state.user && state.user.isApprover && t.status === 'pendingApproval' ? `
+      <div class="detail-row"><div class="label">🛡️ อนุมัติ</div><div class="value">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-success" style="flex:1;" onclick="doApprove('${t.ticketId}');document.getElementById('ticketModal').classList.remove('show');">✅ อนุมัติ</button>
+          <button class="btn btn-danger" style="flex:1;" onclick="doReject('${t.ticketId}');document.getElementById('ticketModal').classList.remove('show');">❌ ไม่อนุมัติ</button>
+        </div>
+      </div></div>
+      ${t.adminNote ? `<div class="detail-row"><div class="label">หมายเหตุ Admin</div><div class="value" style="white-space:pre-wrap;">${escapeHtml(t.adminNote)}</div></div>` : ''}
+    ` : `
+      ${t.adminNote ? `<div class="detail-row"><div class="label">หมายเหตุ Admin</div><div class="value" style="white-space:pre-wrap;">${escapeHtml(t.adminNote)}</div></div>` : ''}
+    `)}
+    ${isOwner && t.status === 'resolved' && uiShow('rating') ? `
+      <div class="detail-row"><div class="label">ให้คะแนน</div><div class="value">
+        ${t.rating ? `<span style="font-size:20px;color:#f59e0b;">${'★'.repeat(parseInt(t.rating))}${'☆'.repeat(5-parseInt(t.rating))}</span> <span style="font-size:12px;color:var(--gray-500);">ให้คะแนนแล้ว</span>`
+        : `<div class="stars" id="rateStars">${[1,2,3,4,5].map(n => `<span data-n="${n}" onclick="submitRating(${n})">★</span>`).join('')}</div>
+           <div style="font-size:11px;color:var(--gray-500);margin-top:4px;">แตะดาวเพื่อประเมินความพึงพอใจ</div>`}
+      </div></div>` : ''}
+    ${uiShow('comment') ? `<div style="margin-top:16px;">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;">💬 การสนทนา</div>
+      <div class="comment-thread" id="commentThread"><div class="loading-page"><span class="loading"></span></div></div>
+      <div class="comment-input-row">
+        <input type="text" class="form-control" id="commentInput" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendComment()">
+        <button class="btn btn-primary" onclick="sendComment()">ส่ง</button>
+      </div>
+    </div>` : ''}`;
+
+  if (isAdmin) {
+    setPendingStatus(t.status);
+    document.getElementById('modalFooter').innerHTML = `
+      <button class="btn btn-danger btn-sm" onclick="deleteCurrentTicket()" style="margin-right:auto;">🗑️ ลบ</button>
+      <button class="btn btn-secondary" onclick="closeModal()">ปิด</button>
+      <button class="btn btn-success" onclick="saveTicketChanges()">💾 บันทึก</button>`;
+  } else {
+    document.getElementById('modalFooter').innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">ปิด</button>`;
+  }
+}
+
+function setPendingStatus(s) {
+  state.pendingStatus = s;
+  document.querySelectorAll('.status-btn').forEach(b => b.classList.toggle('active', b.dataset.status === s));
+}
+
+async function loadComments() {
+  const t = state.currentTicket;
+  const r = await apiGet('getComments', { siteId: t._siteId, ticketId: t.ticketId });
+  const el = document.getElementById('commentThread');
+  if (!el) return;
+  if (!r.ok) { el.innerHTML = '<div class="notif-empty">โหลดไม่สำเร็จ</div>'; return; }
+  state.currentComments = r.comments;
+  if (!r.comments.length) { el.innerHTML = '<div class="notif-empty">ยังไม่มีข้อความ — เริ่มสนทนาได้เลย</div>'; return; }
+  const myName = state.user.isAdmin ? state.user.position : (t.reporterName || state.user.position);
+  el.innerHTML = r.comments.map(c => {
+    const isMine = String(c.by) === String(myName);
+    const canDelete = isMine || state.user.isAdmin;
+    return `
+    <div class="comment-item ${c.role === 'admin' ? 'admin' : ''}" data-cid="${c.id}">
+      <div class="comment-bubble">${escapeHtml(c.message)}</div>
+      <div class="comment-meta">${c.role === 'admin' ? '🛠️' : '👤'} ${escapeHtml(c.by)} • ${escapeHtml(c.createdAt)}${c.editedAt ? ' • แก้ไขแล้ว' : ''}
+        ${isMine ? `<button onclick="startEditComment('${c.id}')" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:10px;padding:0 4px;">แก้</button>` : ''}
+        ${canDelete ? `<button onclick="doDeleteComment('${c.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:10px;padding:0;">ลบ</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function startEditComment(cid) {
+  const c = state.currentComments.find(x => x.id === cid);
+  if (!c) return;
+  const item = document.querySelector(`.comment-item[data-cid="${cid}"]`);
+  if (!item) return;
+  const bubble = item.querySelector('.comment-bubble');
+  bubble.innerHTML = `<div style="display:flex;gap:6px;align-items:center;">
+    <input type="text" class="form-control" id="editCmt_${cid}" value="${escapeHtml(c.message)}" style="font-size:13px;padding:6px 8px;">
+    <button class="btn btn-primary btn-sm" onclick="saveEditComment('${cid}')">✓</button>
+    <button class="btn btn-secondary btn-sm" onclick="loadComments()">✕</button>
+  </div>`;
+  const inp = document.getElementById('editCmt_' + cid);
+  inp.focus();
+  inp.onkeydown = (e) => { if (e.key === 'Enter') saveEditComment(cid); };
+}
+
+async function saveEditComment(cid) {
+  const val = document.getElementById('editCmt_' + cid).value.trim();
+  if (!val) return;
+  const t = state.currentTicket;
+  const myName = state.user.isAdmin ? state.user.position : (t.reporterName || state.user.position);
+  const r = await apiPost('editComment', { siteId: t._siteId, commentId: cid, message: val, by: myName });
+  if (r.ok) loadComments();
+  else toast('แก้ไขไม่สำเร็จ', r.error, 'error');
+}
+
+async function doDeleteComment(cid) {
+  if (!confirm('ลบข้อความนี้?')) return;
+  const t = state.currentTicket;
+  const myName = state.user.isAdmin ? state.user.position : (t.reporterName || state.user.position);
+  const r = await apiPost('deleteComment', { siteId: t._siteId, commentId: cid, by: myName, adminKey: state.user.isAdmin ? state.user.adminKey : '' });
+  if (r.ok) loadComments();
+  else toast('ลบไม่สำเร็จ', r.error, 'error');
+}
+
+async function sendComment() {
+  const input = document.getElementById('commentInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const t = state.currentTicket;
+  input.disabled = true;
+  const r = await apiPost('addComment', {
+    siteId: t._siteId, ticketId: t.ticketId, message: msg,
+    by: state.user.isAdmin ? state.user.position : (t.reporterName || state.user.position),
+    role: state.user.isAdmin ? 'admin' : 'user'
+  });
+  input.disabled = false;
+  if (r.ok) { input.value = ''; loadComments(); }
+  else toast('ส่งไม่สำเร็จ', r.error, 'error');
+}
+
+async function submitRating(n) {
+  const t = state.currentTicket;
+  document.querySelectorAll('#rateStars span').forEach(s => s.classList.toggle('on', +s.dataset.n <= n));
+  const r = await apiPost('rateTicket', { siteId: t._siteId, ticketId: t.ticketId, rating: n, by: t.reporterName });
+  if (r.ok) { toast('ขอบคุณสำหรับคะแนน', '★'.repeat(n), 'success'); state.currentTicket.rating = n; renderTicketModal(); loadComments(); }
+  else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+async function saveTicketChanges() {
+  const t = state.currentTicket;
+  const note = document.getElementById('modalAdminNote').value;
+  const assigneeEl = document.getElementById('modalAssignee');
+  const payload = {
+    siteId: t._siteId, adminKey: state.user.adminKey,
+    ticketId: t.ticketId, status: state.pendingStatus,
+    adminNote: note
+  };
+  // ส่ง assignedTo เฉพาะเมื่อช่องนี้แสดงอยู่ (ถ้าซ่อน → ให้ backend auto-lock)
+  if (assigneeEl) payload.assignedTo = assigneeEl.value.trim();
+  const r = await apiPost('updateTicket', payload);
+  if (r.ok) {
+    toast('บันทึกแล้ว', r.archived ? 'Ticket ถูก Archive อัตโนมัติตามหมวดหมู่' : '', 'success');
+    closeModal(true); loadAdminTickets();
+  } else toast('บันทึกไม่สำเร็จ', r.error, 'error');
+}
+
+async function deleteCurrentTicket() {
+  const t = state.currentTicket;
+  if (!confirm('ลบ Ticket นี้?\n(จะไปอยู่ในถังขยะ Super Admin กู้คืนได้ 7 วัน)')) return;
+  const r = await apiPost('deleteTicket', { siteId: t._siteId, adminKey: state.user.adminKey, ticketId: t.ticketId });
+  if (r.ok) { toast('ลบแล้ว', 'อยู่ในถังขยะ 7 วัน', 'success'); closeModal(true); loadAdminTickets(); }
+  else toast('ลบไม่สำเร็จ', r.error, 'error');
+}
+
+function closeModal(force) {
+  if (!force && state.user && state.user.isAdmin && state.currentTicket) {
+    const note = document.getElementById('modalAdminNote')?.value;
+    const assignee = document.getElementById('modalAssignee')?.value;
+    const changed = state.pendingStatus !== state.currentTicket.status ||
+      (note !== undefined && note !== (state.currentTicket.adminNote||'')) ||
+      (assignee !== undefined && assignee !== (state.currentTicket.assignedTo||''));
+    if (changed && !confirm('มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก ปิดหรือไม่?')) return;
+  }
+  document.getElementById('ticketModal').classList.remove('show');
+  state.currentTicket = null;
+}
+
+/* ═══════ ADMIN APP ═══════ */
+function renderAdminApp() {
+  document.getElementById('mainContent').innerHTML = `
+    <div class="tabs">
+      <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
+      <button class="tab" data-tab="allTickets" onclick="switchTab('allTickets')">📋 Tickets <span id="tabTicketStat" style="font-size:10px;font-weight:600;margin-left:4px;"></span></button>
+      <button class="tab" data-tab="pendingAppr" onclick="switchTab('pendingAppr')">🛡️ รออนุมัติ <span class="tab-badge" id="pendingApprBadge" style="display:none;background:#dc2626;">0</span></button>
+      <button class="tab" data-tab="export" onclick="switchTab('export')">📄 Export</button>
+      <button class="tab" data-tab="manage" onclick="switchTab('manage')">⚙️ จัดการ</button>
+      <button class="tab" data-tab="uiSetting" onclick="switchTab('uiSetting')">🎨 UI Setting</button>
+      <button class="tab" data-tab="archive" onclick="switchTab('archive')">📁 Archive</button>
+    </div>
+    <div class="tab-content active" id="tab-dashboard"></div>
+    <div class="tab-content" id="tab-allTickets"></div>
+    <div class="tab-content" id="tab-pendingAppr"></div>
+    <div class="tab-content" id="tab-export"></div>
+    <div class="tab-content" id="tab-manage"></div>
+    <div class="tab-content" id="tab-uiSetting"></div>
+    <div class="tab-content" id="tab-archive"></div>`;
+  state.currentTab = 'dashboard';
+  state.dashSites = new Set([state.user.siteId]);
+  loadDashboard();
+  startApproverPoll(); // IT Admin เช็ครออนุมัติด้วย (อนุมัติแทนได้)
+}
+
+/* ═══════ ADMIN TICKETS + BULK ═══════ */
+async function loadAdminTickets() {
+  const c = document.getElementById('tab-allTickets');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span> กำลังโหลด...</div>';
+  const r = await apiGet('getAllTickets', { siteId: state.user.siteId });
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div></div>'; return; }
+  state.tickets = r.tickets;
+  state.selectedTickets.clear();
+  state.highlightUnread = new Set(state.notifTickets.map(t => t.ticketId));
+  renderAdminTickets();
+}
+
+function renderAdminTickets() {
+  const c = document.getElementById('tab-allTickets');
+  const depts = [...new Set(state.tickets.map(t => t.deptName))].filter(Boolean);
+  const cats = [...new Set(state.tickets.map(t => t.category))].filter(Boolean);
+  const busInUse = [...new Set(state.tickets.map(t => t.bu))].filter(Boolean);
+  state.adminPage = 1;
+  c.innerHTML = `
+    <div class="filter-bar">
+      <div class="form-group" style="flex:2;min-width:170px;"><label>🔍 ค้นหา</label>
+        <input type="text" class="form-control" id="atSearch" placeholder="คำค้น..." oninput="onAdminFilterChange()"></div>
+      <div class="form-group"><label>แผนก</label>
+        <select class="form-control" id="atDept" onchange="onAdminFilterChange()"><option value="">ทั้งหมด</option>${depts.map(d => `<option>${escapeHtml(d)}</option>`).join('')}</select></div>
+      ${busInUse.length ? `<div class="form-group"><label>🏷️ BU</label>
+        <select class="form-control" id="atBU" onchange="onAdminFilterChange()"><option value="">ทั้งหมด</option>${busInUse.map(b => `<option>${escapeHtml(b)}</option>`).join('')}</select></div>` : ''}
+      <div class="form-group"><label>หมวดหมู่</label>
+        <select class="form-control" id="atCat" onchange="onAdminFilterChange()"><option value="">ทั้งหมด</option>${cats.map(x => `<option>${escapeHtml(x)}</option>`).join('')}</select></div>
+      <div class="form-group"><label>สถานะ</label>
+        <select class="form-control" id="atStatus" onchange="onAdminFilterChange()">
+          <option value="">ทั้งหมด</option><option value="pending">รอดำเนินการ</option>
+          <option value="inProgress">กำลังดำเนินการ</option><option value="resolved">แล้วเสร็จ</option></select></div>
+      <div class="form-group"><label>เร่งด่วน</label>
+        <select class="form-control" id="atPrio" onchange="onAdminFilterChange()">
+          <option value="">ทั้งหมด</option><option value="urgent">เร่งด่วน</option>
+          <option value="normal">ปกติ</option><option value="low">ไม่เร่งด่วน</option></select></div>
+      <div class="form-group"><label>&nbsp;</label><button class="btn btn-secondary" onclick="loadAdminTickets()">🔄</button></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this)" style="width:16px;height:16px;accent-color:var(--primary);"> เลือกทั้งหมดที่แสดง
+      </label>
+      <span id="listCount" style="font-size:12px;color:var(--gray-500);"></span>
+    </div>
+    <div class="ticket-list" id="adminTicketList"></div>
+    <div id="adminPager" style="text-align:center;margin-top:12px;"></div>
+    <div class="bulk-bar" id="bulkBar">
+      <span>เลือก <strong id="bulkCount">0</strong> รายการ</span>
+      <select id="bulkStatus">
+        <option value="pending">⏳ รอดำเนินการ</option>
+        <option value="inProgress">🔧 กำลังดำเนินการ</option>
+        <option value="resolved">✅ แล้วเสร็จ</option>
+      </select>
+      <button class="btn btn-success btn-sm" onclick="applyBulkStatus()">เปลี่ยนสถานะ</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearSelection()">ยกเลิก</button>
+    </div>`;
+  renderAdminTicketsList();
+}
+
+function onAdminFilterChange() { state.adminPage = 1; renderAdminTicketsList(); }
+
+function getFilteredAdminList() {
+  const q = document.getElementById('atSearch')?.value.trim() || '';
+  const fd = document.getElementById('atDept')?.value || '';
+  const fb = document.getElementById('atBU')?.value || '';
+  const fc = document.getElementById('atCat')?.value || '';
+  const fs = document.getElementById('atStatus')?.value || '';
+  const fp = document.getElementById('atPrio')?.value || '';
+  let list = state.tickets;
+  if (fd) list = list.filter(t => t.deptName === fd);
+  if (fb) list = list.filter(t => t.bu === fb);
+  if (fc) list = list.filter(t => t.category === fc);
+  if (fs) list = list.filter(t => t.status === fs);
+  if (fp) list = list.filter(t => t.priority === fp);
+  return list.filter(t => ticketMatchesSearch(t, q));
+}
+
+const ADMIN_PAGE_SIZE = 50;
+function renderAdminTicketsList() {
+  const list = getFilteredAdminList();
+  const c = document.getElementById('adminTicketList');
+  document.getElementById('listCount').textContent = 'พบ ' + list.length + ' รายการ';
+  if (!list.length) { c.innerHTML = '<div class="empty-state"><div class="title">ไม่มี Ticket ตรงเงื่อนไข</div></div>'; document.getElementById('adminPager').innerHTML = ''; return; }
+  const page = state.adminPage || 1;
+  const shown = list.slice(0, page * ADMIN_PAGE_SIZE);
+  c.innerHTML = shown.map(t => ticketCardHTML(t, { selectable: true, highlight: state.highlightUnread.has(t.ticketId) })).join('');
+  const pager = document.getElementById('adminPager');
+  if (shown.length < list.length) {
+    pager.innerHTML = `<button class="btn btn-secondary" onclick="loadMoreAdmin()">โหลดเพิ่ม (${shown.length}/${list.length})</button>`;
+  } else {
+    pager.innerHTML = list.length > ADMIN_PAGE_SIZE ? `<span style="font-size:12px;color:var(--gray-400);">แสดงครบ ${list.length} รายการ</span>` : '';
+  }
+}
+function loadMoreAdmin() { state.adminPage = (state.adminPage || 1) + 1; renderAdminTicketsList(); }
+
+function toggleSelect(id, chk) {
+  if (chk.checked) state.selectedTickets.add(id);
+  else state.selectedTickets.delete(id);
+  updateBulkBar();
+}
+function toggleSelectAll(chk) {
+  const list = getFilteredAdminList();
+  if (chk.checked) list.forEach(t => state.selectedTickets.add(t.ticketId));
+  else state.selectedTickets.clear();
+  document.querySelectorAll('.ticket-check').forEach(c => c.checked = state.selectedTickets.has(c.dataset.tid));
+  updateBulkBar();
+}
+function clearSelection() {
+  state.selectedTickets.clear();
+  document.querySelectorAll('.ticket-check').forEach(c => c.checked = false);
+  const sa = document.getElementById('selectAllChk');
+  if (sa) sa.checked = false;
+  updateBulkBar();
+}
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  if (!bar) return;
+  document.getElementById('bulkCount').textContent = state.selectedTickets.size;
+  bar.classList.toggle('show', state.selectedTickets.size > 0);
+}
+async function applyBulkStatus() {
+  const status = document.getElementById('bulkStatus').value;
+  const ids = Array.from(state.selectedTickets);
+  if (!ids.length) return;
+  if (!confirm('เปลี่ยนสถานะ ' + ids.length + ' รายการ เป็น "' + statusText(status) + '"?')) return;
+  const r = await apiPost('bulkUpdateStatus', { siteId: state.user.siteId, adminKey: state.user.adminKey, ticketIds: ids, status });
+  if (r.ok) { toast('เปลี่ยนสถานะแล้ว', r.count + ' รายการ', 'success'); clearSelection(); loadAdminTickets(); }
+  else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+
+/* ═══════ DASHBOARD (multi-site) ═══════ */
+let charts = {};
+async function loadDashboard() {
+  const c = document.getElementById('tab-dashboard');
+  const chips = state.sites.map(s => `
+    <button class="site-chip ${state.dashSites.has(s.id) ? 'on' : ''}" onclick="toggleDashSite('${s.id}')">
+      <span class="chk">${state.dashSites.has(s.id) ? '✓' : ''}</span> ${escapeHtml(s.id)}
+    </button>`).join('');
+  c.innerHTML = `
+    <div class="site-chips">${chips}</div>
+    <div class="filter-bar">
+      <div class="form-group"><label>วันที่เริ่ม</label><input type="date" id="dashFrom" class="form-control" value="${state.filters.from||''}"></div>
+      <div class="form-group"><label>ถึงวันที่</label><input type="date" id="dashTo" class="form-control" value="${state.filters.to||''}"></div>
+      <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" onclick="applyDashFilter()">🔍 ค้นหา</button></div>
+      <div class="form-group"><label>&nbsp;</label><button class="btn btn-secondary" onclick="resetDashFilter()">รีเซ็ต</button></div>
+    </div>
+    <div id="dashBody"><div class="loading-page"><span class="loading"></span> กำลังโหลด Dashboard...</div></div>`;
+  await renderDashboardData();
+}
+
+function toggleDashSite(id) {
+  if (state.dashSites.has(id)) {
+    if (state.dashSites.size === 1) { toast('ต้องเลือกอย่างน้อย 1 site', '', 'warning'); return; }
+    state.dashSites.delete(id);
+  } else state.dashSites.add(id);
+  loadDashboard();
+}
+function applyDashFilter() {
+  state.filters.from = document.getElementById('dashFrom').value;
+  state.filters.to = document.getElementById('dashTo').value;
+  renderDashboardData();
+}
+function resetDashFilter() { state.filters = {}; loadDashboard(); }
+
+async function renderDashboardData() {
+  const body = document.getElementById('dashBody');
+  body.innerHTML = '<div class="loading-page"><span class="loading"></span> กำลังโหลด...</div>';
+  const siteIds = Array.from(state.dashSites);
+  const r = await apiGet('getAnalytics', { siteIds: siteIds.join(','), from: state.filters.from, to: state.filters.to });
+  if (!r.ok) { body.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div class="title">โหลดไม่สำเร็จ</div></div>'; return; }
+  const s = r.combined;
+  const multi = siteIds.length > 1;
+  const avgRating = s.ratingCount ? (s.ratingSum / s.ratingCount).toFixed(1) : '-';
+  const avgResolveHrs = s.resolveTimeCount ? (s.resolveTimeSum / s.resolveTimeCount / 3600000) : null;
+  const buKeys = Object.keys(s.byBU || {});
+  const showBU = buKeys.length > 1;
+
+  const perSiteRow = multi ? `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">🏭 แยกตาม Site</div>
+      <div class="dept-table"><table>
+        <thead><tr><th>Site</th><th style="text-align:right;">รวม</th><th style="text-align:right;">รอ</th><th style="text-align:right;">กำลังทำ</th><th style="text-align:right;">เสร็จ</th><th style="text-align:right;">⭐ เฉลี่ย</th></tr></thead>
+        <tbody>${siteIds.map(sid => {
+          const x = r.sites[sid] || {};
+          if (x.error) return `<tr><td>${sid}</td><td colspan="5" style="color:var(--danger);">${escapeHtml(x.error)}</td></tr>`;
+          const ar = x.ratingCount ? (x.ratingSum/x.ratingCount).toFixed(1) : '-';
+          return `<tr><td><strong>${sid}</strong></td><td style="text-align:right;">${x.total}</td><td style="text-align:right;">${x.pending}</td><td style="text-align:right;">${x.inProgress}</td><td style="text-align:right;">${x.resolved}</td><td style="text-align:right;">${ar}</td></tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>` : '';
+
+  body.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card total"><div class="stat-label">รวม${multi ? ' (' + siteIds.join('+') + ')' : ''}</div><div class="stat-value">${s.total}</div></div>
+      <div class="stat-card pending"><div class="stat-label">รอดำเนินการ</div><div class="stat-value">${s.pending}</div></div>
+      <div class="stat-card inProgress"><div class="stat-label">กำลังดำเนินการ</div><div class="stat-value">${s.inProgress}</div></div>
+      <div class="stat-card resolved"><div class="stat-label">แล้วเสร็จ</div><div class="stat-value">${s.resolved}</div></div>
+      <div class="stat-card rating"><div class="stat-label">⭐ ความพึงพอใจ</div><div class="stat-value">${avgRating}</div><div class="stat-sub">${s.ratingCount} รีวิว</div></div>
+      ${avgResolveHrs != null ? `<div class="stat-card inProgress"><div class="stat-label">⏱️ เวลาแก้เฉลี่ย</div><div class="stat-value" style="font-size:20px;">${fmtDuration(Math.round(avgResolveHrs*10)/10)}</div><div class="stat-sub">${s.resolveTimeCount} งานที่ปิด</div></div>` : ''}
+    </div>
+    ${perSiteRow}
+    ${uiShow('sla') && s.slaClosedCount ? renderSLAScoreSection(s) : ''}
+    ${showBU ? `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">🏷️ แยกตาม BU</div>
+      <div class="dept-table"><table>
+        <thead><tr><th>BU</th><th style="text-align:right;">จำนวน Ticket</th><th style="text-align:right;">สัดส่วน</th></tr></thead>
+        <tbody>${buKeys.sort((a,b) => s.byBU[b]-s.byBU[a]).map(bu => `
+          <tr><td><strong>${escapeHtml(bu)}</strong></td><td style="text-align:right;">${s.byBU[bu]}</td>
+          <td style="text-align:right;">${s.total ? Math.round(s.byBU[bu]/s.total*100) : 0}%</td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>` : ''}
+    ${uiShow('sla') && s.sla.length ? `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">⏰ Ticket ค้างนานสุด (SLA)</div>
+      <div class="ticket-list">${s.sla.slice(0,5).map(x => {
+        const limit = getCategorySLA(x.category, x.subCategory);
+        const over = x.ageHours >= limit;
+        return `
+        <div class="ticket-item ${over ? 'overdue' : ''}" onclick="openTicketDetail('${x.ticketId}','${x.siteId}')">
+          <div class="ticket-body">
+            <div class="ticket-title">${escapeHtml(x.title)} <span class="age-badge ${over ? 'late' : 'warn'}">ค้าง ${x.ageHours < 24 ? x.ageHours + ' ชม.' : Math.floor(x.ageHours/24) + ' วัน'}${over ? ' • เกิน SLA' : ''}</span></div>
+            <div class="ticket-meta"><span>🏭 ${x.siteId}</span><span>📂 ${escapeHtml(x.category)} - ${escapeHtml(x.subCategory)}</span><span class="status-badge status-${x.status}">${statusText(x.status)}</span></div>
+          </div>
+        </div>`;
+      }).join('')}</div>
+    </div>` : ''}
+    ${s.recurring.length ? `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">🔁 ปัญหาซ้ำซาก (7 วันล่าสุด)</div>
+      ${s.recurring.slice(0,6).map(x => `<div class="chip" style="margin:3px;background:#fef3c7;">⚠️ ${escapeHtml(x.sub)} — ${x.count} ครั้ง (${x.siteId})</div>`).join('')}
+      <div style="font-size:11px;color:var(--gray-500);margin-top:8px;">💡 หมวดที่เกิดซ้ำ ≥3 ครั้ง อาจต้องแก้ระดับ infrastructure</div>
+    </div>` : ''}
+    <div class="chart-grid">
+      <div class="chart-card"><h3>📊 ปัญหาตามหมวดหมู่</h3><div class="chart-container"><canvas id="chCat"></canvas></div></div>
+      <div class="chart-card"><h3>🍩 สัดส่วนตามแผนก</h3><div class="chart-container"><canvas id="chDept"></canvas></div></div>
+    </div>
+    ${showBU ? `<div class="chart-card" style="margin-bottom:14px;"><h3>🏷️ ปัญหาตาม BU</h3><div class="chart-container"><canvas id="chBU"></canvas></div></div>` : ''}
+    <div class="chart-card" style="margin-bottom:14px;"><h3>📈 แนวโน้มรายเดือน</h3><div class="chart-container"><canvas id="chTime"></canvas></div></div>
+    <div class="chart-card"><h3>🔝 Top 10 หมวดย่อย</h3><div class="chart-container tall"><canvas id="chSub"></canvas></div></div>`;
+
+  setTimeout(() => renderCharts(r, siteIds, multi), 50);
+}
+
+function renderSLAScoreSection(s) {
+  const avg = s.slaClosedCount ? Math.round(s.slaScoreSum / s.slaClosedCount) : 0;
+  const scoreColor = avg >= 80 ? '#10b981' : avg >= 60 ? '#f59e0b' : '#ef4444';
+  const pct = n => s.slaClosedCount ? Math.round(n / s.slaClosedCount * 100) : 0;
+  // ตารางแยกหมวด (เรียงตามคะแนนน้อย→มาก เพื่อให้เห็นหมวดที่แย่ก่อน)
+  const catRows = Object.entries(s.slaByCat || {})
+    .map(([k, v]) => ({ name: k, avg: Math.round(v.sum / v.count), count: v.count, ontime: v.ontime, slight: v.slight, over: v.over }))
+    .sort((a, b) => a.avg - b.avg);
+  return `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">📊 คะแนน SLA (จาก ${s.slaClosedCount} Ticket ที่ปิดแล้ว)</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+        <div style="text-align:center;min-width:130px;">
+          <div style="font-size:44px;font-weight:800;color:${scoreColor};line-height:1;">${avg}<span style="font-size:20px;">%</span></div>
+          <div style="font-size:12px;color:var(--gray-500);margin-top:4px;">คะแนนเฉลี่ย</div>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div style="display:flex;height:28px;border-radius:6px;overflow:hidden;font-size:11px;color:#fff;font-weight:600;">
+            ${s.slaOntime ? `<div style="background:#10b981;width:${pct(s.slaOntime)}%;display:flex;align-items:center;justify-content:center;" title="ตรงเวลา">${pct(s.slaOntime)}%</div>` : ''}
+            ${s.slaSlight ? `<div style="background:#f59e0b;width:${pct(s.slaSlight)}%;display:flex;align-items:center;justify-content:center;" title="เกินเล็กน้อย">${pct(s.slaSlight)}%</div>` : ''}
+            ${s.slaOver ? `<div style="background:#ef4444;width:${pct(s.slaOver)}%;display:flex;align-items:center;justify-content:center;" title="เกินมาก">${pct(s.slaOver)}%</div>` : ''}
+          </div>
+          <div style="display:flex;gap:14px;margin-top:10px;font-size:12px;flex-wrap:wrap;">
+            <span>🟢 ตรงเวลา: <strong>${s.slaOntime}</strong> (${pct(s.slaOntime)}%)</span>
+            <span>🟡 เกินเล็กน้อย: <strong>${s.slaSlight}</strong> (${pct(s.slaSlight)}%)</span>
+            <span>🔴 เกินมาก: <strong>${s.slaOver}</strong> (${pct(s.slaOver)}%)</span>
+          </div>
+        </div>
+      </div>
+      ${catRows.length ? `
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">แยกตามหมวดหมู่</div>
+        <div class="dept-table"><table>
+          <thead><tr><th>หมวดย่อย</th><th style="text-align:center;">คะแนน</th><th style="text-align:center;">🟢</th><th style="text-align:center;">🟡</th><th style="text-align:center;">🔴</th><th style="text-align:right;">รวม</th></tr></thead>
+          <tbody>${catRows.map(c => {
+            const cl = c.avg >= 80 ? '#10b981' : c.avg >= 60 ? '#f59e0b' : '#ef4444';
+            return `<tr>
+              <td>${escapeHtml(c.name)}</td>
+              <td style="text-align:center;"><strong style="color:${cl};">${c.avg}%</strong></td>
+              <td style="text-align:center;">${c.ontime}</td>
+              <td style="text-align:center;">${c.slight}</td>
+              <td style="text-align:center;">${c.over}</td>
+              <td style="text-align:right;">${c.count}</td></tr>`;
+          }).join('')}</tbody>
+        </table></div>
+      </div>` : ''}
+      <div style="font-size:11px;color:var(--gray-500);margin-top:10px;">💡 คะแนน: ทำทันเวลา=100 • เกินไม่เกิน 1 เท่า=60 • เกินเกิน 1 เท่า=40 (นับเฉพาะที่ปิดแล้ว)</div>
+    </div>`;
+}
+
+function renderCharts(r, siteIds, multi) {
+  const colors = ['#2563eb','#10b981','#f59e0b','#ef4444','#06b6d4','#8b5cf6','#ec4899','#84cc16'];
+  Object.values(charts).forEach(ch => { try { ch.destroy(); } catch(e){} });
+  charts = {};
+  const s = r.combined;
+
+  // Category — ถ้าหลาย site ทำเป็น stacked แยกสี site
+  const catLabels = Object.keys(s.byCategory);
+  let catDatasets;
+  if (multi) {
+    catDatasets = siteIds.map((sid, i) => ({
+      label: sid,
+      data: catLabels.map(c => (r.sites[sid] && r.sites[sid].byCategory ? r.sites[sid].byCategory[c] : 0) || 0),
+      backgroundColor: colors[i % colors.length], borderRadius: 4
+    }));
+  } else {
+    catDatasets = [{ label:'จำนวน', data: catLabels.map(c => s.byCategory[c]), backgroundColor: colors.slice(0, catLabels.length), borderRadius: 6 }];
+  }
+  charts.cat = new Chart(document.getElementById('chCat'), {
+    type: 'bar', data: { labels: catLabels, datasets: catDatasets },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display: multi } },
+      scales: { x:{ stacked: multi }, y:{ stacked: multi, beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+
+  const dLabels = Object.keys(s.byDept);
+  charts.dept = new Chart(document.getElementById('chDept'), {
+    type:'doughnut', data:{ labels: dLabels, datasets:[{ data: dLabels.map(k => s.byDept[k]), backgroundColor: colors }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
+  });
+
+  // BU chart (ถ้ามีมากกว่า 1 BU)
+  const buCanvas = document.getElementById('chBU');
+  if (buCanvas && s.byBU) {
+    const buLabels = Object.keys(s.byBU).sort((a,b) => s.byBU[b]-s.byBU[a]);
+    charts.bu = new Chart(buCanvas, {
+      type:'bar', data:{ labels: buLabels, datasets:[{ label:'จำนวน', data: buLabels.map(k => s.byBU[k]), backgroundColor: colors, borderRadius:6 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+    });
+  }
+
+  const tLabels = Object.keys(s.timeline).sort();
+  let timeDatasets;
+  if (multi) {
+    timeDatasets = siteIds.map((sid, i) => ({
+      label: sid, data: tLabels.map(m => (r.sites[sid] && r.sites[sid].timeline ? r.sites[sid].timeline[m] : 0) || 0),
+      borderColor: colors[i % colors.length], backgroundColor: 'transparent', tension:.3
+    }));
+  } else {
+    timeDatasets = [{ label:'จำนวน', data: tLabels.map(k => s.timeline[k]), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.1)', tension:.3, fill:true }];
+  }
+  charts.time = new Chart(document.getElementById('chTime'), {
+    type:'line', data:{ labels: tLabels, datasets: timeDatasets },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+
+  const subItems = Object.entries(s.bySubCategory).sort((a,b) => b[1]-a[1]).slice(0,10);
+  charts.sub = new Chart(document.getElementById('chSub'), {
+    type:'bar', data:{ labels: subItems.map(x => x[0]), datasets:[{ data: subItems.map(x => x[1]), backgroundColor:'#10b981', borderRadius:6 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+}
+
+/* ═══════ EXPORT PDF ═══════ */
+function loadExportPanel() {
+  const c = document.getElementById('tab-export');
+  const depts = [...new Set(state.tickets.map(t => t.deptName))].filter(Boolean);
+  c.innerHTML = `
+    <div class="card">
+      <div class="card-title">📄 Export รายงาน PDF — ${escapeHtml(state.user.siteName)}</div>
+      <div class="filter-bar" style="margin-bottom:8px;">
+        <div class="form-group"><label>แผนก</label>
+          <select class="form-control" id="expDept"><option value="">ทั้งหมด</option>${depts.map(d => `<option>${escapeHtml(d)}</option>`).join('')}</select></div>
+        <div class="form-group"><label>วันที่เริ่ม</label><input type="date" id="expFrom" class="form-control"></div>
+        <div class="form-group"><label>ถึงวันที่</label><input type="date" id="expTo" class="form-control"></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" onclick="previewExport()">👁️ Preview</button></div>
+      </div>
+      <div id="exportPreview" class="export-preview" style="display:none;"></div>
+      <div id="exportButtons" style="display:none;gap:10px;margin-top:12px;flex-wrap:wrap;">
+        <button class="btn btn-success" onclick="doExportPDF('detail')">📄 PDF รายละเอียด</button>
+        <button class="btn btn-warning" onclick="doExportPDF('summary')">📋 PDF สรุป (แนวนอน)</button>
+        <button class="btn btn-primary" onclick="doExportExcel()">📊 Excel (.xls)</button>
+      </div>
+    </div>`;
+}
+
+function getExportFiltered() {
+  const fd = document.getElementById('expDept').value;
+  const ff = document.getElementById('expFrom').value;
+  const ft = document.getElementById('expTo').value;
+  let list = [...state.tickets];
+  if (fd) list = list.filter(t => t.deptName === fd);
+  if (ff) list = list.filter(t => String(t.createdAt) >= ff);
+  if (ft) list = list.filter(t => String(t.createdAt) <= ft + ' 23:59:59');
+  return { list, filterText: [fd && ('แผนก: '+fd), (ff||ft) && ('วันที่: '+(ff||'...')+' ถึง '+(ft||'...'))].filter(Boolean).join(' | ') || 'ทั้งหมด' };
+}
+
+function previewExport() {
+  const { list, filterText } = getExportFiltered();
+  const el = document.getElementById('exportPreview');
+  el.style.display = 'block';
+  el.innerHTML = `<strong>พบ ${list.length} Ticket</strong><div style="color:var(--gray-600);margin-top:4px;">ตัวกรอง: ${escapeHtml(filterText)}</div>
+    <hr style="margin:8px 0;border:none;border-top:1px solid var(--gray-200);">
+    ${list.slice(0,5).map(t => `<div style="padding:3px 0;">• ${escapeHtml(t.ticketId)} — ${escapeHtml(t.title)}</div>`).join('')}
+    ${list.length > 5 ? `<div style="color:var(--gray-500);margin-top:4px;">... และอีก ${list.length-5} รายการ</div>` : ''}`;
+  document.getElementById('exportButtons').style.display = 'flex';
+}
+
+function doExportExcel() {
+  const { list, filterText } = getExportFiltered();
+  if (!list.length) { toast('ไม่มีข้อมูล', '', 'warning'); return; }
+  const headers = ['TicketID','วันที่แจ้ง','สถานะ','ความเร่งด่วน','BU','แผนก','หมวดหมู่','หมวดย่อย','ชื่อปัญหา','รายละเอียด','ผู้แจ้ง','เบอร์โทร','ผู้รับผิดชอบ','หมายเหตุ Admin','เริ่มทำ','ปิดงาน','เวลาแก้(ชม.)','คะแนน'];
+  const rows = list.map(t => [
+    t.ticketId, t.createdAt, statusText(t.status), prioText(t.priority).replace(/[🔴🟡🟢]/g,'').trim(),
+    t.bu, t.deptName, t.category, t.subCategory, t.title, t.description,
+    t.reporterName, t.phone, t.assignedTo, t.adminNote,
+    t.startedAt, t.resolvedAt, t.resolveDurationHrs, t.rating
+  ]);
+  // สร้างไฟล์ .xls แบบ HTML table (Excel เปิดได้ รองรับ UTF-8 ไทย)
+  let table = '<table border="1"><thead><tr>' + headers.map(h => `<th style="background:#2563eb;color:#fff;">${escapeHtml(h)}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    table += '<tr>' + r.map(c => `<td>${escapeHtml(String(c==null?'':c))}</td>`).join('') + '</tr>';
+  });
+  table += '</tbody></table>';
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Tickets</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
+    <body><h3>${escapeHtml(state.user.siteName)} — Ticket Report (${escapeHtml(filterText)})</h3>${table}</body></html>`;
+  const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Ticket_' + state.user.siteId + '_' + new Date().toISOString().slice(0,10) + '.xls';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Export Excel เสร็จแล้ว', list.length + ' รายการ', 'success');
+}
+
+function doExportPDF(mode) {
+  const { list, filterText } = getExportFiltered();
+  if (!list.length) { toast('ไม่มีข้อมูล', '', 'warning'); return; }
+  const html = mode === 'detail' ? renderDetailPDF(list, filterText) : renderSummaryPDF(list, filterText);
+  const el = document.createElement('div');
+  el.innerHTML = html;
+  el.style.fontFamily = 'Sarabun, sans-serif';
+  document.body.appendChild(el);
+  toast('กำลังสร้าง PDF', 'รอสักครู่...', 'info');
+  html2pdf().set({
+    margin: 8, filename: 'Ticket_' + state.user.siteId + '_' + new Date().toISOString().slice(0,10) + '.pdf',
+    image: { type:'jpeg', quality:.95 }, html2canvas: { scale:2, useCORS:true },
+    jsPDF: { unit:'mm', format:'a4', orientation: mode === 'summary' ? 'landscape' : 'portrait' }
+  }).from(el).save().then(() => { document.body.removeChild(el); toast('PDF เสร็จแล้ว', '', 'success'); });
+}
+
+function renderDetailPDF(list, filterText) {
+  return `<div style="padding:16px;font-size:11px;">
+    <h1 style="text-align:center;font-size:17px;margin-bottom:4px;">${escapeHtml(state.user.siteName)} — Ticket Report</h1>
+    <div style="text-align:center;color:#666;margin-bottom:14px;font-size:10px;">${escapeHtml(filterText)} | ${list.length} Ticket | ${new Date().toLocaleString('th-TH')}</div>
+    ${list.map((t,i) => `
+      <div style="border:1px solid #ddd;border-radius:6px;padding:9px;margin-bottom:8px;page-break-inside:avoid;">
+        <div style="display:flex;justify-content:space-between;"><strong style="font-size:12px;">${i+1}. ${escapeHtml(t.title)}</strong><span style="font-size:9px;">[${t.ticketId}]</span></div>
+        <table style="width:100%;font-size:9px;border-collapse:collapse;margin-top:4px;">
+          <tr><td style="width:80px;color:#666;padding:2px;">แผนก:</td><td>${escapeHtml(t.deptName)}</td><td style="width:80px;color:#666;">BU:</td><td>${escapeHtml(t.bu||'-')}</td></tr>
+          <tr><td style="color:#666;padding:2px;">หมวด:</td><td>${escapeHtml(t.category)} → ${escapeHtml(t.subCategory)}</td><td style="color:#666;">สถานะ:</td><td>${statusText(t.status)}</td></tr>
+          <tr><td style="color:#666;padding:2px;">ผู้แจ้ง:</td><td>${escapeHtml(t.reporterName)} ${t.phone ? '📞'+escapeHtml(t.phone) : ''}</td><td style="color:#666;">เวลา:</td><td>${escapeHtml(String(t.createdAt))}</td></tr>
+          ${t.assignedTo ? `<tr><td style="color:#666;padding:2px;">ผู้รับผิดชอบ:</td><td colspan="3">${escapeHtml(t.assignedTo)}</td></tr>` : ''}
+        </table>
+        <div style="margin-top:4px;padding-top:4px;border-top:1px dashed #ddd;">${escapeHtml(t.description)}</div>
+        ${t.adminNote ? `<div style="margin-top:4px;padding:5px;background:#fef3c7;border-radius:4px;font-size:9px;"><strong>Admin:</strong> ${escapeHtml(t.adminNote)}</div>` : ''}
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderSummaryPDF(list, filterText) {
+  const grouped = {};
+  list.forEach(t => {
+    if (!grouped[t.deptName]) grouped[t.deptName] = [];
+    grouped[t.deptName].push(t);
+  });
+  const st = { total:list.length, p:list.filter(t=>t.status==='pending').length, i:list.filter(t=>t.status==='inProgress').length, r:list.filter(t=>t.status==='resolved').length };
+  let html = `<div style="padding:12px;font-size:9px;">
+    <h1 style="text-align:center;font-size:15px;margin-bottom:3px;">${escapeHtml(state.user.siteName)} — สรุป Ticket</h1>
+    <div style="text-align:center;color:#666;margin-bottom:10px;font-size:8px;">${escapeHtml(filterText)} | ${new Date().toLocaleString('th-TH')}</div>
+    <div style="display:flex;justify-content:space-around;background:#f3f4f6;padding:6px;border-radius:6px;margin-bottom:10px;">
+      <div><strong>รวม:</strong> ${st.total}</div><div><strong>รอ:</strong> ${st.p}</div><div><strong>กำลังทำ:</strong> ${st.i}</div><div><strong>เสร็จ:</strong> ${st.r}</div>
+    </div>`;
+  Object.keys(grouped).forEach(dept => {
+    html += `<h3 style="background:#2563eb;color:#fff;padding:5px;border-radius:4px;margin-top:8px;font-size:11px;">🏢 ${escapeHtml(dept)} (${grouped[dept].length})</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:8px;margin-top:4px;">
+      <thead><tr style="background:#e5e7eb;"><th style="padding:3px;border:1px solid #ccc;">ID</th><th style="padding:3px;border:1px solid #ccc;text-align:left;">ปัญหา</th><th style="padding:3px;border:1px solid #ccc;">BU</th><th style="padding:3px;border:1px solid #ccc;">หมวด</th><th style="padding:3px;border:1px solid #ccc;">ผู้แจ้ง</th><th style="padding:3px;border:1px solid #ccc;">สถานะ</th><th style="padding:3px;border:1px solid #ccc;">วันที่</th></tr></thead><tbody>`;
+    grouped[dept].forEach(t => {
+      html += `<tr><td style="padding:3px;border:1px solid #ccc;">${t.ticketId}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.title)}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.bu||'-')}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.subCategory)}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.reporterName)}</td><td style="padding:3px;border:1px solid #ccc;">${statusText(t.status)}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(String(t.createdAt).substring(0,10))}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  });
+  return html + '</div>';
+}
+
+
+/* ═══════ MANAGE PANEL (แผนก / BU / ตำแหน่ง / หมวดหมู่) ═══════ */
+function loadManagePanel() {
+  const c = document.getElementById('tab-manage');
+  c.innerHTML = `
+    <div class="tabs" style="margin-bottom:14px;">
+      <button class="tab active" data-mtab="depts" onclick="switchManageTab('depts')">🏢 แผนก</button>
+      <button class="tab" data-mtab="bus" onclick="switchManageTab('bus')">🏷️ BU</button>
+      <button class="tab" data-mtab="positions" onclick="switchManageTab('positions')">👥 ตำแหน่ง & รหัสผ่าน</button>
+      <button class="tab" data-mtab="cats" onclick="switchManageTab('cats')">📂 หมวดหมู่</button>
+    </div>
+    <div id="managePanelBody"></div>`;
+  switchManageTab('depts');
+}
+function switchManageTab(tab) {
+  document.querySelectorAll('[data-mtab]').forEach(t => t.classList.toggle('active', t.dataset.mtab === tab));
+  if (tab === 'depts') loadDeptMgmt();
+  if (tab === 'bus') loadBUMgmt();
+  if (tab === 'positions') loadPositionMgmt();
+  if (tab === 'cats') loadCategoryMgmt();
+}
+
+/* ── แผนก ── */
+async function loadDeptMgmt() {
+  const c = document.getElementById('managePanelBody');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span></div>';
+  const r = await apiGet('getDepts', { siteId: state.user.siteId });
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="title">โหลดไม่สำเร็จ</div></div>'; return; }
+  state.depts = r.departments;
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">➕ เพิ่มแผนก</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="newDeptName" class="form-control" placeholder="ชื่อแผนก" style="flex:1;min-width:170px;">
+        <input type="number" id="newDeptQuota" class="form-control" value="100" style="width:110px;" title="Quota">
+        <button class="btn btn-primary" onclick="addNewDept()">เพิ่ม</button>
+      </div>
+    </div>
+    <div class="dept-table"><table>
+      <thead><tr><th>ID</th><th>ชื่อแผนก</th><th>Quota</th><th>การกระทำ</th></tr></thead>
+      <tbody>${r.departments.map(d => `
+        <tr><td><code>${d.id}</code></td><td><strong>${escapeHtml(d.name)}</strong></td>
+        <td><input type="number" id="q_${d.id}" value="${d.quota}" style="width:80px;padding:5px;border:1px solid var(--gray-300);border-radius:6px;">
+          <button class="btn btn-primary btn-sm" onclick="updateQuota('${d.id}')">💾</button></td>
+        <td><button class="btn btn-danger btn-sm" onclick="if(confirm('ปิดใช้แผนกนี้?'))toggleDept('${d.id}')">ปิด</button></td></tr>`).join('')}
+      </tbody></table></div>`;
+}
+async function addNewDept() {
+  const name = document.getElementById('newDeptName').value.trim();
+  const quota = parseInt(document.getElementById('newDeptQuota').value) || 100;
+  if (!name) { toast('กรอกชื่อแผนก', '', 'warning'); return; }
+  const r = await apiPost('manageDept', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'add', name, quota });
+  if (r.ok) { toast('เพิ่มแล้ว', '', 'success'); loadDeptMgmt(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function toggleDept(deptId) {
+  const r = await apiPost('manageDept', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'toggle', deptId });
+  if (r.ok) { toast('อัปเดตแล้ว', '', 'success'); loadDeptMgmt(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function updateQuota(deptId) {
+  const quota = parseInt(document.getElementById('q_' + deptId).value);
+  if (!quota || quota < 1) { toast('Quota ต้องมากกว่า 0', '', 'warning'); return; }
+  const r = await apiPost('manageDept', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'setQuota', deptId, quota });
+  if (r.ok) toast('บันทึกแล้ว', '', 'success'); else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+/* ── BU ── */
+async function loadBUMgmt() {
+  const c = document.getElementById('managePanelBody');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span></div>';
+  const r = await apiGet('getBUs', { siteId: state.user.siteId });
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="title">โหลดไม่สำเร็จ</div></div>'; return; }
+  state.bus = r.bus;
+  writeCache(state.user.siteId, 'bu', r.bus);
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">➕ เพิ่ม BU</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="newBuId" class="form-control" placeholder="รหัส เช่น 890" style="width:130px;">
+        <input type="text" id="newBuName" class="form-control" placeholder="ชื่อ เช่น CDC DRY" style="flex:1;min-width:160px;">
+        <button class="btn btn-primary" onclick="addNewBU()">เพิ่ม</button>
+      </div>
+      <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">💡 ตัวอย่าง: 890 = CDC DRY, 920 = Fresh food CDC, 901 = MKF, 847 = WFDC, 894-895 = HDC</div>
+    </div>
+    ${r.bus.length ? `<div class="dept-table"><table>
+      <thead><tr><th>รหัส BU</th><th>ชื่อ</th><th>การกระทำ</th></tr></thead>
+      <tbody>${r.bus.map(b => `<tr><td><code>${escapeHtml(String(b.id))}</code></td><td><strong>${escapeHtml(b.name)}</strong></td>
+        <td><button class="btn btn-danger btn-sm" onclick="if(confirm('ปิด BU นี้?'))toggleBU('${escapeHtml(String(b.id))}')">ปิด</button></td></tr>`).join('')}</tbody>
+    </table></div>` : '<div class="empty-state"><div class="title">ยังไม่มี BU — เพิ่มด้านบน</div></div>'}`;
+}
+async function addNewBU() {
+  const buId = document.getElementById('newBuId').value.trim();
+  const name = document.getElementById('newBuName').value.trim();
+  if (!buId || !name) { toast('กรอกให้ครบ', '', 'warning'); return; }
+  const r = await apiPost('manageBU', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'add', buId, name });
+  if (r.ok) { toast('เพิ่ม BU แล้ว', buId + ' — ' + name, 'success'); loadBUMgmt(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function toggleBU(buId) {
+  const r = await apiPost('manageBU', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'toggle', buId });
+  if (r.ok) { toast('อัปเดตแล้ว', '', 'success'); loadBUMgmt(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+/* ── ตำแหน่ง & รหัสผ่าน ── */
+async function loadPositionMgmt() {
+  const c = document.getElementById('managePanelBody');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span></div>';
+  const r = await apiGet('getAllPositionsAdmin', { siteId: state.user.siteId, adminKey: state.user.adminKey });
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div class="title">' + escapeHtml(r.error||'โหลดไม่สำเร็จ') + '</div></div>'; return; }
+  state.allPositions = r.positions;
+  const deptOpts = state.depts.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">➕ เพิ่มตำแหน่ง</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+        <div class="form-group" style="margin-bottom:0;flex:1;min-width:140px;"><label>แผนก</label>
+          <select id="newPosDept" class="form-control">${deptOpts}</select></div>
+        <div class="form-group" style="margin-bottom:0;flex:1;min-width:150px;"><label>ชื่อตำแหน่ง</label>
+          <input type="text" id="newPosName" class="form-control" placeholder="เช่น Forklift Driver"></div>
+        <div class="form-group" style="margin-bottom:0;min-width:150px;"><label>รหัสผ่าน</label>
+          <div style="display:flex;gap:5px;">
+            <input type="text" id="newPosPassword" class="form-control">
+            <button class="btn btn-secondary" onclick="document.getElementById('newPosPassword').value=genPassword(document.getElementById('newPosName').value)">🎲</button>
+          </div></div>
+        <button class="btn btn-primary" onclick="addNewPosition()">เพิ่ม</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div class="card-title" style="margin-bottom:0;">👥 ตำแหน่งทั้งหมด (${r.positions.length})</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="text" id="posSearch" class="form-control" placeholder="🔍 ค้นหา..." style="width:170px;padding:7px 9px;font-size:12px;" oninput="renderPositionTable()">
+          <button class="btn btn-secondary btn-sm" onclick="togglePasswordVisibility()" id="pwVisBtn">👁️ แสดงรหัส</button>
+        </div></div>
+    </div>
+    <div id="positionTableWrap"></div>`;
+  state.showPasswords = false;
+  renderPositionTable();
+}
+
+function renderPositionTable() {
+  const q = (document.getElementById('posSearch')?.value || '').trim().toLowerCase();
+  let list = state.allPositions;
+  if (q) list = list.filter(p => (p.name + ' ' + p.deptName).toLowerCase().includes(q));
+  const show = state.showPasswords;
+  const adminCount = state.allPositions.filter(p => p.isAdmin).length;
+  document.getElementById('positionTableWrap').innerHTML = `
+    <div style="padding:8px 12px;background:var(--gray-50);border-radius:8px;margin-bottom:10px;font-size:12px;color:var(--gray-600);">
+      🛡️ Admin ปัจจุบัน: <strong>${adminCount}/10</strong> คน — Admin เพิ่ม/ถอดสิทธิ์กันเองได้ (ต้องเหลืออย่างน้อย 1 คน)
+    </div>
+    <div class="dept-table"><table>
+      <thead><tr><th>ID</th><th>แผนก</th><th>ตำแหน่ง</th><th>รหัสผ่าน</th><th>สถานะ</th><th>การกระทำ</th></tr></thead>
+      <tbody>${list.map(p => `
+        <tr style="${!p.active ? 'opacity:.5;' : ''}">
+          <td><code>${p.id}</code></td><td>${escapeHtml(p.deptName)}</td>
+          <td><strong>${escapeHtml(p.name)}</strong>${p.isAdmin ? ' <span style="font-size:10px;color:var(--primary);">🛡️ Admin</span>' : ''}</td>
+          <td><code>${show ? escapeHtml(p.password) : '••••••'}</code>
+            <button class="btn btn-secondary btn-sm" onclick="copyPassword('${p.id}')">📋</button></td>
+          <td>${p.active ? '<span style="color:var(--success);">✓</span>' : '<span style="color:var(--gray-400);">ปิด</span>'}</td>
+          <td style="white-space:nowrap;">
+            <button class="btn btn-warning btn-sm" onclick="resetPositionPassword('${p.id}')">🔑 Reset</button>
+            ${!p.isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="togglePosition('${p.id}')">${p.active ? '⏸' : '▶'}</button>` : ''}
+            ${p.isAdmin
+              ? `<button class="btn btn-danger btn-sm" onclick="setAdminRole('${p.id}',false)" title="ถอดสิทธิ์ Admin">🛡️➖</button>`
+              : (p.active ? `<button class="btn btn-primary btn-sm" onclick="setAdminRole('${p.id}',true)" title="ตั้งเป็น Admin">🛡️➕</button>` : '')}
+          </td></tr>`).join('')}
+      </tbody></table></div>`;
+}
+async function setAdminRole(positionId, makeAdmin) {
+  const p = state.allPositions.find(x => x.id === positionId);
+  const name = p ? p.name : '';
+  if (makeAdmin) {
+    if (!confirm(`ตั้ง "${name}" เป็น IT Admin?\n\nจะมีสิทธิ์เต็ม: จัดการ ticket, หมวดหมู่, ตำแหน่ง, อนุมัติ ฯลฯ`)) return;
+  } else {
+    if (!confirm(`ถอด "${name}" ออกจาก Admin?\n\nจะกลับเป็นผู้ใช้ทั่วไป`)) return;
+  }
+  const r = await apiPost('managePosition', {
+    siteId: state.user.siteId, adminKey: state.user.adminKey,
+    subAction: makeAdmin ? 'setAdmin' : 'removeAdmin', positionId
+  });
+  if (r.ok) {
+    toast(makeAdmin ? 'ตั้งเป็น Admin แล้ว' : 'ถอด Admin แล้ว', name, 'success');
+    loadPositionMgmt();
+  } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+function togglePasswordVisibility() {
+  state.showPasswords = !state.showPasswords;
+  document.getElementById('pwVisBtn').textContent = state.showPasswords ? '🙈 ซ่อนรหัส' : '👁️ แสดงรหัส';
+  renderPositionTable();
+}
+function copyPassword(id) {
+  const p = state.allPositions.find(x => x.id === id);
+  if (!p) return;
+  navigator.clipboard.writeText(p.password).then(() => toast('คัดลอกแล้ว', p.name, 'success'))
+    .catch(() => prompt('คัดลอกรหัสผ่าน:', p.password));
+}
+function genPassword(hint) {
+  let prefix = 'Px';
+  if (hint && hint.trim()) {
+    prefix = hint.trim().split(/\s+/).map(w => w[0]).join('').substring(0,3);
+    prefix = prefix.charAt(0).toUpperCase() + prefix.slice(1).toLowerCase();
+  }
+  return prefix + Math.floor(1000 + Math.random()*9000);
+}
+async function addNewPosition() {
+  const deptId = document.getElementById('newPosDept').value;
+  const name = document.getElementById('newPosName').value.trim();
+  let password = document.getElementById('newPosPassword').value.trim();
+  if (!name) { toast('กรอกชื่อตำแหน่ง', '', 'warning'); return; }
+  if (!password) password = genPassword(name);
+  const r = await apiPost('managePosition', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'add', deptId, name, password });
+  if (r.ok) { toast('เพิ่มแล้ว', name + ' — รหัส: ' + password, 'success'); document.getElementById('newPosName').value=''; document.getElementById('newPosPassword').value=''; loadPositionMgmt(); }
+  else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function togglePosition(id) {
+  const p = state.allPositions.find(x => x.id === id);
+  if (!p || !confirm((p.active?'ปิด':'เปิด') + 'ใช้งาน "' + p.name + '"?')) return;
+  const r = await apiPost('managePosition', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'toggle', positionId: id });
+  if (r.ok) { toast('อัปเดตแล้ว', '', 'success'); loadPositionMgmt(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function resetPositionPassword(id) {
+  const p = state.allPositions.find(x => x.id === id);
+  if (!p) return;
+  const suggested = genPassword(p.name);
+  const newPassword = prompt('Reset รหัสผ่านของ "' + p.name + '"\nกรอกรหัสใหม่:', suggested);
+  if (newPassword === null) return;
+  if (!newPassword || newPassword.length < 4) { toast('รหัสสั้นไป', 'อย่างน้อย 4 ตัว', 'warning'); return; }
+  const r = await apiPost('adminResetPassword', { siteId: state.user.siteId, adminKey: state.user.adminKey, positionId: id, newPassword });
+  if (r.ok) {
+    toast('Reset สำเร็จ', p.name + ' → ' + newPassword, 'success');
+    if (p.isAdmin) { state.user.adminKey = newPassword; saveSession(); }
+    loadPositionMgmt();
+  } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+/* ── หมวดหมู่ (+ AutoArchive) ── */
+async function loadCategoryMgmt() {
+  const c = document.getElementById('managePanelBody');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span></div>';
+  const r = await apiGet('getCategories', { siteId: state.user.siteId });
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="title">โหลดไม่สำเร็จ</div></div>'; return; }
+  state.categories = r.categories;
+  writeCache(state.user.siteId, 'cat', r.categories);
+  const mains = [...new Set(r.categories.map(x => x.main))];
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">➕ เพิ่มหมวดหมู่</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="newCatMain" class="form-control" list="mainCatList" placeholder="หมวดหลัก (เลือกหรือพิมพ์ใหม่)" style="flex:1;min-width:160px;">
+        <datalist id="mainCatList">${mains.map(m => `<option value="${escapeHtml(m)}">`).join('')}</datalist>
+        <input type="text" id="newCatSub" class="form-control" placeholder="หมวดย่อย" style="flex:1;min-width:140px;">
+        <button class="btn btn-primary" onclick="addNewCategory()">เพิ่ม</button>
+      </div>
+      <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">💡 Auto-Archive = เมื่อ Ticket แล้วเสร็จ (หรืออนุมัติแล้ว) จะย้ายเข้า Archive อัตโนมัติ<br>💡 ต้องอนุมัติ = พนักงานแจ้งแล้วต้องรอผู้อนุมัติ (Management) กด ✅/❌ ก่อน — ตั้ง "ผู้อนุมัติ" ให้ครบก่อนเปิด</div>
+    </div>
+    ${mains.map(main => {
+      const subs = r.categories.filter(x => x.main === main);
+      return `<div class="card" style="margin-bottom:10px;">
+        <div class="card-title">📂 ${escapeHtml(main)} <span style="font-weight:400;color:var(--gray-500);font-size:12px;">(${subs.length})</span></div>
+        <div class="dept-table"><table>
+          <thead><tr><th>หมวดย่อย</th><th style="text-align:center;">Auto-Archive</th><th style="text-align:center;">ต้องอนุมัติ</th><th>ผู้อนุมัติ</th><th style="text-align:center;">SLA (ชม./นาที)</th><th></th></tr></thead>
+          <tbody>${subs.map(x => {
+            const slaH = x.slaHours ? Math.floor(x.slaHours) : '';
+            const slaM = x.slaHours ? Math.round((x.slaHours - Math.floor(x.slaHours)) * 60) : '';
+            return `
+            <tr><td>${escapeHtml(x.sub)}</td>
+            <td style="text-align:center;"><label class="toggle-switch"><input type="checkbox" ${x.autoArchive?'checked':''} onchange="toggleAutoArchive('${x.id}')"><span class="slider"></span></label></td>
+            <td style="text-align:center;"><label class="toggle-switch"><input type="checkbox" ${x.requiresApproval?'checked':''} onchange="toggleRequiresApproval('${x.id}')"><span class="slider"></span></label></td>
+            <td>
+              ${x.approverIds.length ? `<span style="font-size:12px;color:var(--gray-600);">${x.approverIds.length} คน</span>` : `<span style="font-size:11px;color:var(--danger);">${x.requiresApproval ? '⚠ ยังไม่ตั้ง' : '—'}</span>`}
+              <button class="btn btn-secondary btn-sm" style="margin-left:6px;" onclick="openApproverPicker('${x.id}','${escapeHtml(x.main)}','${escapeHtml(x.sub)}')">👥 เลือก</button>
+            </td>
+            <td style="text-align:center;white-space:nowrap;">
+              <input type="number" min="0" class="sla-input" id="slaH_${x.id}" value="${slaH}" placeholder="ชม." style="width:52px;text-align:center;padding:4px;border:1px solid var(--gray-300);border-radius:4px;font-size:12px;">
+              <input type="number" min="0" max="59" class="sla-input" id="slaM_${x.id}" value="${slaM}" placeholder="นาที" style="width:52px;text-align:center;padding:4px;border:1px solid var(--gray-300);border-radius:4px;font-size:12px;">
+              <button class="btn btn-secondary btn-sm" onclick="saveSLA('${x.id}')" title="บันทึก SLA">💾</button>
+            </td>
+            <td style="text-align:right;"><button class="btn btn-danger btn-sm" onclick="deleteCategory('${x.id}','${escapeHtml(x.main)}','${escapeHtml(x.sub)}')">✕ ลบ</button></td></tr>`;
+          }).join('')}
+          </tbody></table></div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">💡 SLA = เวลาที่ยอมรับได้ก่อนถือว่าค้างเกิน (เว้นว่าง = ค่าเริ่มต้น 24 ชม.)</div>
+      </div>`;
+    }).join('')}`;
+}
+async function addNewCategory() {
+  const main = document.getElementById('newCatMain').value.trim();
+  const sub = document.getElementById('newCatSub').value.trim();
+  if (!main || !sub) { toast('กรอกให้ครบ', '', 'warning'); return; }
+  const r = await apiPost('manageCategory', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'add', main, sub });
+  if (r.ok) { toast('เพิ่มแล้ว', main + ' → ' + sub, 'success'); document.getElementById('newCatSub').value=''; loadCategoryMgmt(); }
+  else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function deleteCategory(id, main, sub) {
+  if (!confirm('ลบ "' + main + ' → ' + sub + '"?\n(Ticket เดิมที่ใช้หมวดนี้ยังอยู่)')) return;
+  const r = await apiPost('manageCategory', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'delete', categoryId: id });
+  if (r.ok) { toast('ลบแล้ว', '', 'success'); loadCategoryMgmt(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function toggleAutoArchive(id) {
+  const r = await apiPost('manageCategory', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'toggleAutoArchive', categoryId: id });
+  if (r.ok) toast('อัปเดต Auto-Archive แล้ว', '', 'success'); else { toast('ไม่สำเร็จ', r.error, 'error'); loadCategoryMgmt(); }
+}
+async function toggleRequiresApproval(id) {
+  const r = await apiPost('manageCategory', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'toggleRequiresApproval', categoryId: id });
+  if (r.ok) { toast('อัปเดตแล้ว', 'ต้องอนุมัติ', 'success'); invalidateCache(state.user.siteId, 'cat'); loadCategoryMgmt(); }
+  else { toast('ไม่สำเร็จ', r.error, 'error'); loadCategoryMgmt(); }
+}
+async function saveSLA(id) {
+  const h = parseInt(document.getElementById('slaH_' + id).value) || 0;
+  const m = parseInt(document.getElementById('slaM_' + id).value) || 0;
+  if (m > 59) { toast('นาทีต้อง 0-59', '', 'warning'); return; }
+  const slaHours = h + m / 60; // ทศนิยม เช่น 1.5 = 1ชม.30น. (0 = ล้างค่า → ใช้ default)
+  const r = await apiPost('manageCategory', {
+    siteId: state.user.siteId, adminKey: state.user.adminKey,
+    subAction: 'setSLA', categoryId: id, slaHours: slaHours
+  });
+  if (r.ok) {
+    toast('บันทึก SLA แล้ว', slaHours > 0 ? `${h} ชม. ${m} นาที` : 'ใช้ค่าเริ่มต้น 24 ชม.', 'success');
+    invalidateCache(state.user.siteId, 'cat');
+    // อัปเดต state.categories ทันที (ให้ badge/dashboard คำนวณใหม่ถูก)
+    const cat = (state.categories || []).find(c => c.id === id);
+    if (cat) cat.slaHours = slaHours > 0 ? slaHours : '';
+  } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function openApproverPicker(categoryId, main, sub) {
+  // โหลดตำแหน่งทั้งหมด + approvers ปัจจุบัน
+  const [posR, catR] = await Promise.all([
+    apiGet('getPositionsForApprover', { siteId: state.user.siteId, adminKey: state.user.adminKey }),
+    apiGet('getCategories', { siteId: state.user.siteId })
+  ]);
+  if (!posR.ok) { toast('โหลดตำแหน่งไม่สำเร็จ', posR.error, 'error'); return; }
+  const cat = catR.ok ? catR.categories.find(x => x.id === categoryId) : null;
+  const currentIds = new Set((cat && cat.approverIds) || []);
+  // กลุ่มตาม dept
+  const byDept = {};
+  posR.positions.forEach(p => { (byDept[p.deptName] = byDept[p.deptName] || []).push(p); });
+  const html = `
+    <div class="modal-overlay show" id="approverPickerModal" onclick="if(event.target===this)closeApproverPicker()">
+      <div class="modal" style="max-width:520px;">
+        <div class="modal-header">
+          <h3>👥 เลือกผู้อนุมัติ</h3>
+          <button class="modal-close" onclick="closeApproverPicker()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom:12px;padding:10px;background:var(--gray-50);border-radius:8px;font-size:13px;">
+            หมวด: <strong>${escapeHtml(main)} → ${escapeHtml(sub)}</strong><br>
+            <span style="color:var(--gray-500);font-size:11px;">ติ๊กคนที่มีสิทธิ์อนุมัติหมวดนี้ (เลือกได้หลายคน — ใครกดก่อนก็จบ)</span>
+          </div>
+          <input type="text" class="form-control" placeholder="🔍 ค้นหาชื่อ / แผนก..." oninput="filterApproverList(this.value)" style="margin-bottom:10px;">
+          <div id="approverListBox" style="max-height:400px;overflow-y:auto;">
+            ${Object.keys(byDept).sort().map(dep => `
+              <div class="approver-dept-group" data-dept="${escapeHtml(dep.toLowerCase())}" style="margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:600;color:var(--gray-600);padding:4px 0;border-bottom:1px solid var(--gray-200);margin-bottom:6px;">${escapeHtml(dep)}</div>
+                ${byDept[dep].map(p => `
+                  <label class="approver-item" data-name="${escapeHtml(p.name.toLowerCase())}" style="display:flex;align-items:center;gap:10px;padding:8px;cursor:pointer;border-radius:6px;" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+                    <input type="checkbox" value="${p.id}" ${currentIds.has(p.id)?'checked':''} style="width:16px;height:16px;accent-color:var(--primary);">
+                    <span style="flex:1;font-size:13px;">${escapeHtml(p.name)}${p.isAdmin?' <span style="font-size:10px;color:var(--primary);">🛠️ IT Admin</span>':''}</span>
+                  </label>`).join('')}
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeApproverPicker()">ยกเลิก</button>
+          <button class="btn btn-primary" onclick="saveApprovers('${categoryId}')">💾 บันทึก</button>
+        </div>
+      </div>
+    </div>`;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap.firstElementChild);
+}
+function filterApproverList(q) {
+  q = q.trim().toLowerCase();
+  document.querySelectorAll('.approver-dept-group').forEach(g => {
+    const items = g.querySelectorAll('.approver-item');
+    let any = false;
+    items.forEach(it => {
+      const match = !q || it.dataset.name.includes(q) || g.dataset.dept.includes(q);
+      it.style.display = match ? '' : 'none';
+      if (match) any = true;
+    });
+    g.style.display = any ? '' : 'none';
+  });
+}
+function closeApproverPicker() {
+  const m = document.getElementById('approverPickerModal');
+  if (m) m.remove();
+}
+async function saveApprovers(categoryId) {
+  const checked = [...document.querySelectorAll('#approverPickerModal input[type=checkbox]:checked')].map(x => x.value);
+  const r = await apiPost('manageCategory', {
+    siteId: state.user.siteId, adminKey: state.user.adminKey,
+    subAction: 'setApprovers', categoryId: categoryId, positionIds: checked
+  });
+  if (r.ok) {
+    toast('บันทึกผู้อนุมัติแล้ว', checked.length + ' คน', 'success');
+    closeApproverPicker();
+    invalidateCache(state.user.siteId, 'cat');
+    loadCategoryMgmt();
+  } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+/* ═══════ ARCHIVE ═══════ */
+async function loadArchive() {
+  const c = document.getElementById('tab-archive');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span></div>';
+  const r = await apiGet('getArchive', { siteId: state.user.siteId });
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="title">โหลดไม่สำเร็จ</div></div>'; return; }
+  if (!r.tickets.length) { c.innerHTML = '<div class="empty-state"><div class="icon">📁</div><div class="title">ยังไม่มี Ticket ใน Archive</div></div>'; return; }
+  state.archiveTickets = r.tickets;
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <strong>📁 Archive: ${r.tickets.length} รายการ</strong>
+        <button class="btn btn-secondary btn-sm" onclick="exportArchiveCSV()">⬇️ CSV</button>
+      </div></div>
+    <div class="ticket-list">${r.tickets.map(t => ticketCardHTML(t)).join('')}</div>`;
+}
+function exportArchiveCSV() {
+  const headers = ['TicketID','DeptName','BU','Category','SubCategory','Title','Status','Priority','Reporter','Phone','AssignedTo','Rating','CreatedAt','ArchivedAt'];
+  const rows = state.archiveTickets.map(t => [t.ticketId,t.deptName,t.bu,t.category,t.subCategory,t.title,t.status,t.priority,t.reporterName,t.phone,t.assignedTo,t.rating,t.createdAt,t.archivedAt]);
+  const csv = '\ufeff' + [headers,...rows].map(r => r.map(c => '"' + String(c||'').replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Archive_' + state.user.siteId + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
+/* ═══════ SUPER ADMIN APP ═══════ */
+async function enterSuperApp() {
+  showView('appView');
+  document.getElementById('topbarRight').style.display = 'flex';
+  document.getElementById('btnChangePw').style.display = 'none';
+  document.getElementById('bellBtn').style.display = 'none';
+  document.getElementById('siteBadge').textContent = '🛡️';
+  document.getElementById('appTitle').textContent = 'Super Admin';
+  document.getElementById('userInfo').textContent = 'ผู้ดูแลส่วนกลาง';
+  // โหลดรายชื่อ site ไว้ใช้ (dashboard ข้ามไซต์ ฯลฯ)
+  try { const r = await apiGet('getSites'); if (r.ok) state.sites = r.sites; } catch(e) {}
+  startIdleWatch();
+  document.getElementById('mainContent').innerHTML = `
+    <div class="tabs">
+      <button class="tab active" data-tab="spSites" onclick="switchTab('spSites')">🏭 จัดการ Site</button>
+      <button class="tab" data-tab="spTrash" onclick="switchTab('spTrash')">🗑️ ถังขยะ</button>
+      <button class="tab" data-tab="spLog" onclick="switchTab('spLog')">📋 Log</button>
+    </div>
+    <div class="tab-content active" id="tab-spSites"></div>
+    <div class="tab-content" id="tab-spTrash"></div>
+    <div class="tab-content" id="tab-spLog"></div>`;
+  state.currentTab = 'spSites';
+  loadSuperSites();
+}
+
+/* ── จัดการ Site + สร้าง Site ใหม่ ── */
+async function loadSuperSites() {
+  const c = document.getElementById('tab-spSites');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span></div>';
+  const r = await apiGet('getSites');
+  const sitesHtml = (r.ok && r.sites.length) ? `
+    <div class="dept-table"><table>
+      <thead><tr><th>Site ID</th><th>ชื่อ</th><th>การกระทำ</th></tr></thead>
+      <tbody>${r.sites.map(s => `
+        <tr><td><code>${escapeHtml(s.id)}</code></td><td><strong>${escapeHtml(s.name)}</strong></td>
+        <td><button class="btn btn-danger btn-sm" onclick="toggleSiteConfirm('${escapeHtml(s.id)}')">ปิดใช้งาน</button></td></tr>`).join('')}
+      </tbody></table></div>` : '<div class="empty-state"><div class="title">ยังไม่มี Site</div></div>';
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">🚀 สร้าง Site ใหม่</div>
+      <div class="form-group"><label>Site ID <span class="req">*</span> <span style="font-weight:400;color:var(--gray-500);">(ตัวย่อ A-Z/0-9 เช่น BKK)</span></label>
+        <input type="text" id="spSiteId" class="form-control" placeholder="เช่น BKK" style="text-transform:uppercase;" maxlength="10"></div>
+      <div class="form-group"><label>ชื่อ Site เต็ม <span class="req">*</span></label>
+        <input type="text" id="spSiteName" class="form-control" placeholder="เช่น Bangkok DC"></div>
+      <div class="form-group"><label>ชื่อ IT Admin <span style="font-weight:400;color:var(--gray-500);">(เว้นว่าง = IT [ID] ADMIN)</span></label>
+        <input type="text" id="spAdminName" class="form-control" placeholder="เช่น IT BKK ADMIN"></div>
+      <div class="form-group">
+        <label>📋 Copy โครงสร้างจาก Site อื่น <span style="font-weight:400;color:var(--gray-500);">(ไม่บังคับ)</span></label>
+        <select id="spCopyFrom" class="form-control" onchange="onCopyFromChange()">
+          <option value="">— ไม่ copy (เริ่มจากค่ามาตรฐาน) —</option>
+          ${(r.ok ? r.sites : []).map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.id)} — ${escapeHtml(s.name)}</option>`).join('')}
+        </select>
+        <div id="copyOptions" style="display:none;margin-top:10px;padding:12px;background:var(--gray-50);border-radius:8px;">
+          <div style="font-size:12px;color:var(--gray-600);margin-bottom:8px;">เลือกสิ่งที่จะ copy มา:</div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;cursor:pointer;">
+            <input type="checkbox" id="spCopyDepts" checked style="width:16px;height:16px;accent-color:var(--primary);"> 🏢 แผนก</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;cursor:pointer;">
+            <input type="checkbox" id="spCopyCats" checked style="width:16px;height:16px;accent-color:var(--primary);"> 📂 หมวดหมู่ (+ Auto-Archive)</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="spCopyBUs" checked style="width:16px;height:16px;accent-color:var(--primary);"> 🏷️ BU</label>
+          <div style="font-size:11px;color:var(--gray-500);margin-top:8px;">💡 ตำแหน่ง & รหัสผ่านไม่ถูก copy (แต่ละคนตั้งเอง) — แผนก Support + IT Admin สร้างให้เสมอ</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" id="runSiteBtn" onclick="runCreateSite()">🚀 Run Site</button>
+      <div id="createSiteResult"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏭 Site ทั้งหมด</div>
+      ${sitesHtml}
+    </div>`;
+}
+
+function onCopyFromChange() {
+  const val = document.getElementById('spCopyFrom').value;
+  document.getElementById('copyOptions').style.display = val ? 'block' : 'none';
+}
+
+async function runCreateSite() {
+  const siteId = document.getElementById('spSiteId').value.trim().toUpperCase();
+  const siteName = document.getElementById('spSiteName').value.trim();
+  const adminName = document.getElementById('spAdminName').value.trim();
+  if (!siteId || !siteName) { toast('กรอก Site ID และชื่อให้ครบ', '', 'warning'); return; }
+  const copyFrom = document.getElementById('spCopyFrom').value;
+  const copyDepts = copyFrom && document.getElementById('spCopyDepts').checked;
+  const copyCats = copyFrom && document.getElementById('spCopyCats').checked;
+  const copyBUs = copyFrom && document.getElementById('spCopyBUs').checked;
+  const btn = document.getElementById('runSiteBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="loading"></span> กำลังสร้าง Site... (อาจใช้เวลาสักครู่)';
+  try {
+    const r = await apiPost('createSite', { superKey: state.superKey, siteId, siteName, adminName, copyFrom, copyDepts, copyCats, copyBUs });
+    if (r.ok) {
+      document.getElementById('createSiteResult').innerHTML = `
+        <div style="margin-top:14px;padding:16px;background:#d1fae5;border:1px solid var(--success);border-radius:10px;">
+          <div style="font-weight:700;color:#065f46;margin-bottom:10px;">✅ สร้าง Site "${escapeHtml(r.siteName)}" สำเร็จ!${r.copyNote ? '<div style="font-size:12px;font-weight:400;margin-top:4px;">Copy:' + escapeHtml(r.copyNote) + '</div>' : ''}</div>
+          <div class="detail-row"><div class="label">IT Admin</div><div class="value"><strong>${escapeHtml(r.adminName)}</strong></div></div>
+          <div class="detail-row"><div class="label">รหัสผ่าน</div><div class="value"><code style="font-size:15px;background:#fff;padding:4px 10px;">${escapeHtml(r.password)}</code> <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('${escapeHtml(r.password)}');toast('คัดลอกแล้ว','','success')">📋</button></div></div>
+          <div class="detail-row"><div class="label">Google Sheet</div><div class="value"><a href="${r.sheetUrl}" target="_blank">🔗 เปิด Sheet ของ Site นี้</a></div></div>
+          <div style="margin-top:10px;font-size:12px;color:#065f46;">📌 ส่งรหัสผ่านนี้ให้ IT ของ Site ใหม่ เพื่อ login → เข้าเมนู "จัดการ" ตั้งค่าแผนก/BU/หมวดหมู่/ตำแหน่งต่อเอง</div>
+        </div>`;
+      document.getElementById('spSiteId').value = '';
+      document.getElementById('spSiteName').value = '';
+      document.getElementById('spAdminName').value = '';
+      document.getElementById('spCopyFrom').value = '';
+      document.getElementById('copyOptions').style.display = 'none';
+      toast('สร้าง Site สำเร็จ', r.siteName, 'success');
+    } else toast('สร้างไม่สำเร็จ', r.error, 'error');
+  } catch(e) { toast('เกิดข้อผิดพลาด', e.message, 'error'); }
+  finally { btn.disabled = false; btn.innerHTML = '🚀 Run Site'; }
+}
+
+async function toggleSiteConfirm(siteId) {
+  if (!confirm('ปิดใช้งาน Site "' + siteId + '"?\nผู้ใช้จะ login ไม่ได้ (ข้อมูลไม่หาย เปิดคืนได้)')) return;
+  const r = await apiPost('toggleSite', { superKey: state.superKey, siteId });
+  if (r.ok) { toast('อัปเดตแล้ว', '', 'success'); loadSuperSites(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+/* ── ถังขยะ ── */
+async function loadTrash() {
+  const c = document.getElementById('tab-spTrash');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span></div>';
+  const r = await apiGet('listTrash', { superKey: state.superKey });
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div class="title">' + escapeHtml(r.error||'') + '</div></div>'; return; }
+  if (!r.items.length) { c.innerHTML = '<div class="empty-state"><div class="icon">🗑️</div><div class="title">ถังขยะว่าง</div></div>'; return; }
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:12px;"><strong>🗑️ ถังขยะ (${r.items.length})</strong>
+      <div style="font-size:12px;color:var(--gray-500);margin-top:4px;">Ticket ที่ IT Admin ลบ — กู้คืนได้ภายใน 7 วัน หลังจากนั้นลบถาวรอัตโนมัติ</div></div>
+    <div class="ticket-list">${r.items.map(it => `
+      <div class="ticket-item">
+        <div class="ticket-icon pending">🗑️</div>
+        <div class="ticket-body">
+          <div class="ticket-title">${escapeHtml(it.title)}</div>
+          <div class="ticket-meta">
+            <span>🏭 ${escapeHtml(it.siteId)}</span><span>🎫 ${escapeHtml(it.ticketId)}</span>
+            <span>👤 ลบโดย ${escapeHtml(it.deletedBy)}</span><span>🕒 ${escapeHtml(it.deletedAt)}</span>
+            <span class="age-badge ${it.daysLeft <= 2 ? 'late' : 'warn'}">เหลือ ${it.daysLeft} วัน</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <button class="btn btn-success btn-sm" onclick="doRestore('${it.trashId}')">♻️ กู้คืน</button>
+          <button class="btn btn-danger btn-sm" onclick="doPurge('${it.trashId}','${escapeHtml(it.title)}')">🔥 ลบถาวร</button>
+        </div>
+      </div>`).join('')}</div>`;
+}
+async function doRestore(trashId) {
+  const r = await apiPost('restoreTicket', { superKey: state.superKey, trashId });
+  if (r.ok) { toast('กู้คืนสำเร็จ', 'Ticket กลับเข้า Site แล้ว', 'success'); loadTrash(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function doPurge(trashId, title) {
+  if (!confirm('ลบถาวร "' + title + '"?\n⚠️ กู้คืนไม่ได้อีก!')) return;
+  const r = await apiPost('purgeTicket', { superKey: state.superKey, trashId });
+  if (r.ok) { toast('ลบถาวรแล้ว', '', 'success'); loadTrash(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+/* ── Audit Log ── */
+async function loadAuditLog() {
+  const c = document.getElementById('tab-spLog');
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span></div>';
+  const r = await apiGet('getAuditLog', { superKey: state.superKey, limit: 300 });
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div class="title">' + escapeHtml(r.error||'') + '</div></div>'; return; }
+  if (!r.logs.length) { c.innerHTML = '<div class="empty-state"><div class="icon">📋</div><div class="title">ยังไม่มี Log</div></div>'; return; }
+  const actionLabel = {
+    login:'🔑 เข้าระบบ', submitTicket:'📝 แจ้ง Ticket', changeStatus:'🔄 เปลี่ยนสถานะ',
+    bulkStatus:'🔄 เปลี่ยนสถานะหลายใบ', deleteTicket:'🗑️ ลบ Ticket', restoreTicket:'♻️ กู้คืน',
+    purgeTicket:'🔥 ลบถาวร', resetPassword:'🔑 Reset รหัส', changePassword:'🔑 เปลี่ยนรหัส',
+    comment:'💬 คอมเมนต์', rateTicket:'⭐ ให้คะแนน', createSite:'🚀 สร้าง Site',
+    toggleSite:'🏭 เปิด/ปิด Site', addDept:'➕ เพิ่มแผนก', addPosition:'➕ เพิ่มตำแหน่ง',
+    addCategory:'➕ เพิ่มหมวด', addBU:'➕ เพิ่ม BU', superLogin:'🛡️ Super เข้าระบบ',
+    superLoginFail:'⛔ Super ผิดรหัส', toggleAutoArchive:'📁 Auto-Archive'
+  };
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <strong>📋 Audit Log (${r.logs.length} ล่าสุด)</strong>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="logSearch" class="form-control" placeholder="🔍 ค้นหา..." style="width:160px;padding:7px;font-size:12px;" oninput="filterLog()">
+        <button class="btn btn-secondary btn-sm" onclick="exportLogCSV()">⬇️ CSV</button>
+      </div></div></div>
+    <div class="dept-table"><table>
+      <thead><tr><th>เวลา</th><th>Site</th><th>การกระทำ</th><th>โดย</th><th>รายละเอียด</th></tr></thead>
+      <tbody id="logTableBody">${r.logs.map(l => `
+        <tr><td style="white-space:nowrap;font-size:11px;">${escapeHtml(l.timestamp)}</td>
+        <td><code>${escapeHtml(l.siteId)}</code></td>
+        <td style="white-space:nowrap;">${actionLabel[l.action] || escapeHtml(l.action)}</td>
+        <td>${escapeHtml(l.by)}</td><td style="font-size:11px;">${escapeHtml(l.detail)}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  state._logs = r.logs;
+  state._actionLabel = actionLabel;
+}
+function filterLog() {
+  const q = document.getElementById('logSearch').value.trim().toLowerCase();
+  const rows = (state._logs || []).filter(l =>
+    !q || (l.timestamp + ' ' + l.siteId + ' ' + l.action + ' ' + l.by + ' ' + l.detail).toLowerCase().includes(q));
+  document.getElementById('logTableBody').innerHTML = rows.map(l => `
+    <tr><td style="white-space:nowrap;font-size:11px;">${escapeHtml(l.timestamp)}</td>
+    <td><code>${escapeHtml(l.siteId)}</code></td>
+    <td style="white-space:nowrap;">${state._actionLabel[l.action] || escapeHtml(l.action)}</td>
+    <td>${escapeHtml(l.by)}</td><td style="font-size:11px;">${escapeHtml(l.detail)}</td></tr>`).join('');
+}
+function exportLogCSV() {
+  const headers = ['Timestamp','SiteID','Action','By','Detail'];
+  const rows = (state._logs || []).map(l => [l.timestamp,l.siteId,l.action,l.by,l.detail]);
+  const csv = '\ufeff' + [headers,...rows].map(r => r.map(c => '"' + String(c||'').replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'AuditLog_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
+/* ═══════ POLLING + NOTIFICATION ═══════ */
+function startAdminPoll() {
+  const readKey = 'tk_read_' + state.user.siteId;
+  state.readTicketIds = loadReadIds(readKey);
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  const poll = async () => {
+    try {
+      const r = await apiGet('pollAdmin', { siteId: state.user.siteId });
+      if (!r.ok) return;
+      processAdminPoll(r.tickets, readKey);
+    } catch(e) {}
+  };
+  state.pollNow = poll;
+  poll();
+  startAdaptivePoll(poll, 30000);
+}
+
+/* polling อัจฉริยะ: ใช้ interval ปกติเมื่อ active, ยืดเป็น 3 เท่าเมื่อไม่ได้แตะเกิน 3 นาที
+   หรือแท็บถูกซ่อน → ลด load server โดยไม่กระทบการแจ้งเตือนตอนใช้งานจริง */
+function startAdaptivePoll(pollFn, baseMs) {
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  let lastRun = Date.now();
+  state.pollTimer = setInterval(() => {
+    const idleMs = Date.now() - lastActivity;
+    const hidden = document.hidden;
+    // ถ้าไม่ active (เกิน 3 นาที) หรือแท็บซ่อน → poll ทุก baseMs*3
+    const effectiveInterval = (hidden || idleMs > 180000) ? baseMs * 3 : baseMs;
+    if (Date.now() - lastRun >= effectiveInterval) {
+      lastRun = Date.now();
+      pollFn();
+    }
+  }, Math.min(baseMs, 15000)); // ตรวจทุก 15 วิ หรือ baseMs (อันไหนน้อยกว่า)
+}
+
+function updateTabTicketStat(tickets) {
+  const el = document.getElementById('tabTicketStat');
+  if (!el) return;
+  let p = 0, i = 0;
+  tickets.forEach(t => { if (t.status === 'pending') p++; else if (t.status === 'inProgress') i++; });
+  const parts = [];
+  if (p > 0) parts.push(`<span style="color:#92400e;">รอ ${p}</span>`);
+  if (i > 0) parts.push(`<span style="color:#1e40af;">ทำ ${i}</span>`);
+  el.innerHTML = parts.length ? '(' + parts.join(' | ') + ')' : '';
+}
+
+function processAdminPoll(tickets, readKey) {
+  const newNotifs = [];
+  const prevSnapshot = state.knownSnapshot;
+  const nextSnapshot = {};
+
+  tickets.forEach(t => {
+    nextSnapshot[t.ticketId] = { status: t.status, updatedAt: t.updatedAt, commentCount: t.commentCount };
+    const prev = prevSnapshot[t.ticketId];
+    const isRead = state.readTicketIds.has(t.ticketId);
+    if (!state.primed) return;
+    if (!prev) {
+      // ticket ใหม่
+      newNotifs.push({ ticketId: t.ticketId, title: t.title, type:'new', priority: t.priority, deptName: t.deptName, updatedAt: t.updatedAt });
+    } else {
+      // comment ใหม่
+      if (t.commentCount > (prev.commentCount || 0)) {
+        newNotifs.push({ ticketId: t.ticketId, title: t.title, type:'comment', deptName: t.deptName, updatedAt: t.updatedAt });
+      }
+    }
+  });
+
+  state.knownSnapshot = nextSnapshot;
+
+  // อัปเดตตัวเลขสถานะบนแท็บ Tickets (ทุก poll)
+  updateTabTicketStat(tickets);
+
+  if (!state.primed) { state.primed = true; return; }
+
+  if (newNotifs.length) {
+    newNotifs.forEach(n => {
+      if (!state.notifTickets.some(x => x.ticketId === n.ticketId && x.type === n.type)) {
+        state.notifTickets.unshift(n);
+      }
+      state.highlightUnread.add(n.ticketId);
+    });
+    state.notifTickets = state.notifTickets.slice(0, 40);
+    playDing();
+    const first = newNotifs[0];
+    const label = first.type === 'comment' ? '💬 มีความคิดเห็นใหม่' : (first.priority === 'urgent' ? '🔴 Ticket เร่งด่วนใหม่!' : '🔔 Ticket ใหม่');
+    toast(label, first.title + (newNotifs.length > 1 ? ' และอีก ' + (newNotifs.length-1) : ''), first.priority === 'urgent' ? 'error' : 'info',
+      () => { switchTabTo('allTickets'); openTicketDetail(first.ticketId); });
+    updateBellBadge();
+    updateNotifList();
+    // refresh ตาราง ถ้ากำลังดูแท็บ Tickets
+    if (state.currentTab === 'allTickets') loadAdminTickets();
+  }
+}
+
+function startUserPoll() {
+  const readKey = 'tk_uread_' + state.user.siteId + '_' + state.user.deptId;
+  state.readTicketIds = loadReadIds(readKey);
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  const poll = async () => {
+    try {
+      const r = await apiGet('pollUser', { siteId: state.user.siteId, deptId: state.user.deptId });
+      if (!r.ok) return;
+      processUserPoll(r.tickets);
+    } catch(e) {}
+  };
+  state.pollNow = poll;
+  poll();
+  startAdaptivePoll(poll, 60000);
+}
+
+function processUserPoll(tickets) {
+  const prevSnapshot = state.knownSnapshot;
+  const nextSnapshot = {};
+  const updates = [];
+  tickets.forEach(t => {
+    nextSnapshot[t.ticketId] = { status: t.status, updatedAt: t.updatedAt, commentCount: t.commentCount };
+    const prev = prevSnapshot[t.ticketId];
+    if (!state.primed || !prev) return;
+    if (t.status !== prev.status) {
+      updates.push({ ticketId: t.ticketId, title: t.title, type:'status', status: t.status });
+    } else if (t.commentCount > (prev.commentCount || 0)) {
+      updates.push({ ticketId: t.ticketId, title: t.title, type:'comment' });
+    }
+  });
+  state.knownSnapshot = nextSnapshot;
+  if (!state.primed) { state.primed = true; return; }
+  if (updates.length) {
+    updates.forEach(u => state.updatedTicketIds.add(u.ticketId));
+    playDing();
+    const u = updates[0];
+    const msg = u.type === 'status' ? 'สถานะเปลี่ยนเป็น "' + statusText(u.status) + '"' : 'IT ตอบกลับแล้ว 💬';
+    toast('🔔 อัปเดต Ticket', u.title + ' — ' + msg, 'info', () => switchTabTo('myTickets'));
+    updateUserBadge();
+    if (state.currentTab === 'myTickets') loadMyTickets();
+  }
+}
+
+function switchTabTo(tab) {
+  const btn = document.querySelector('.tab[data-tab="' + tab + '"]');
+  if (btn) btn.click();
+}
+
+function updateBellBadge() {
+  const unread = state.notifTickets.length;
+  const badge = document.getElementById('bellBadge');
+  if (!badge) return;
+  if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 99 ? '99+' : unread; }
+  else badge.style.display = 'none';
+}
+
+function updateNotifList() {
+  const list = document.getElementById('notifList');
+  if (!list) return;
+  if (!state.notifTickets.length) { list.innerHTML = '<div class="notif-empty">ไม่มีการแจ้งเตือนใหม่</div>'; return; }
+  list.innerHTML = state.notifTickets.map(n => `
+    <div class="notif-item" onclick="notifClick('${n.ticketId}')">
+      <div class="notif-title">${n.type === 'comment' ? '💬' : (n.priority === 'urgent' ? '🔴' : '🎫')} ${escapeHtml(n.title)}</div>
+      <div class="notif-meta">${n.type === 'comment' ? 'ความคิดเห็นใหม่' : 'Ticket ใหม่'} ${n.deptName ? '• ' + escapeHtml(n.deptName) : ''} • ${escapeHtml(String(n.updatedAt||''))}</div>
+    </div>`).join('');
+}
+
+function notifClick(ticketId) {
+  document.getElementById('notifDropdown').classList.remove('show');
+  markTicketRead(ticketId);
+  if (state.currentTab !== 'allTickets') switchTabTo('allTickets');
+  openTicketDetail(ticketId);
+}
+
+function toggleNotifDropdown() {
+  const d = document.getElementById('notifDropdown');
+  d.classList.toggle('show');
+  if (d.classList.contains('show')) updateNotifList();
+}
+
+function markTicketRead(ticketId) {
+  const readKey = 'tk_read_' + state.user.siteId;
+  state.readTicketIds.add(ticketId);
+  saveReadIds(readKey, state.readTicketIds);
+  state.notifTickets = state.notifTickets.filter(n => n.ticketId !== ticketId);
+  state.highlightUnread.delete(ticketId);
+  updateBellBadge();
+  updateNotifList();
+}
+
+function updateUserBadge() {
+  const badge = document.getElementById('myTicketsBadge');
+  if (!badge) return;
+  const n = state.updatedTicketIds.size;
+  if (n > 0) { badge.style.display = 'inline-flex'; badge.textContent = n; }
+  else badge.style.display = 'none';
+}
+
+/* poll ทันทีเมื่อกลับมาที่แท็บ */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && state.pollNow) state.pollNow();
+});
+/* ปิด dropdown เมื่อคลิกนอกพื้นที่ */
+document.addEventListener('click', (e) => {
+  const d = document.getElementById('notifDropdown');
+  const bell = document.getElementById('bellBtn');
+  if (d && d.classList.contains('show') && !d.contains(e.target) && bell && !bell.contains(e.target)) {
+    d.classList.remove('show');
+  }
+});
+
+/* ═══════ CHANGE PASSWORD ═══════ */
+function openChangePasswordModal() {
+  if (!state.user) return;
+  document.getElementById('modalTitle').textContent = '🔑 เปลี่ยนรหัสผ่าน';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-group"><label>รหัสผ่านเดิม</label>
+      <input type="password" id="cpOld" class="form-control" placeholder="••••••••"></div>
+    <div class="form-group"><label>รหัสผ่านใหม่ (อย่างน้อย 4 ตัว)</label>
+      <input type="password" id="cpNew" class="form-control" placeholder="••••••••"></div>
+    <div class="form-group"><label>ยืนยันรหัสผ่านใหม่</label>
+      <input type="password" id="cpConfirm" class="form-control" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitChangePassword()"></div>`;
+  document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal(true)">ยกเลิก</button>
+    <button class="btn btn-primary" onclick="submitChangePassword()">บันทึก</button>`;
+  document.getElementById('ticketModal').classList.add('show');
+}
+async function submitChangePassword() {
+  const oldPassword = document.getElementById('cpOld').value;
+  const newPassword = document.getElementById('cpNew').value;
+  const confirm2 = document.getElementById('cpConfirm').value;
+  if (!oldPassword || !newPassword) { toast('กรอกให้ครบ', '', 'warning'); return; }
+  if (newPassword.length < 4) { toast('รหัสใหม่สั้นไป', 'อย่างน้อย 4 ตัว', 'warning'); return; }
+  if (newPassword !== confirm2) { toast('รหัสยืนยันไม่ตรงกัน', '', 'warning'); return; }
+  const r = await apiPost('changePassword', {
+    siteId: state.user.siteId, deptId: state.user.deptId, position: state.user.position,
+    oldPassword, newPassword
+  });
+  if (r.ok) {
+    toast('เปลี่ยนรหัสผ่านสำเร็จ', 'ใช้รหัสใหม่ครั้งต่อไป', 'success');
+    if (state.user.isAdmin) state.user.adminKey = newPassword;
+    saveSession();
+    document.getElementById('ticketModal').classList.remove('show');
+  } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+/* ═══════ 🎨 UI SETTING (ซ่อน/โชว์ field ต่อ site) ═══════ */
+const UI_FIELDS = [
+  { group: 'ฟอร์มแจ้งปัญหา', items: [
+    { key: 'bu', label: 'BU' },
+    { key: 'phone', label: 'เบอร์โทร' },
+    { key: 'priority', label: 'ความเร่งด่วน' },
+    { key: 'image', label: 'รูปภาพแนบ' },
+    { key: 'file', label: 'ไฟล์เอกสารแนบ' }
+  ]},
+  { group: 'การ์ด / รายละเอียด ticket', items: [
+    { key: 'sla', label: 'SLA (แจ้งเตือนค้างนาน)' },
+    { key: 'assignee', label: 'ผู้รับผิดชอบ' },
+    { key: 'timeline', label: 'ไทม์ไลน์' },
+    { key: 'comment', label: 'คอมเมนต์' },
+    { key: 'rating', label: 'การประเมิน (ให้ดาว)' }
+  ]}
+];
+
+function loadUISettingPanel() {
+  const c = document.getElementById('tab-uiSetting');
+  if (!c) return;
+  const cfg = state.uiConfig || {};
+  c.innerHTML = `
+    <div class="card">
+      <div class="card-title">🎨 ตั้งค่าการแสดงผล — ${escapeHtml(state.user.siteName)}</div>
+      <div style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">
+        เลือกว่าจะ<strong>ซ่อน</strong>หรือ<strong>แสดง</strong>ช่องไหนบ้าง — ปิดแล้วจะหายทั้งระบบ (ฟอร์ม + การ์ด + รายละเอียด + Dashboard) เฉพาะ site นี้
+      </div>
+      <div style="padding:10px 14px;background:var(--gray-50);border-radius:8px;margin-bottom:16px;font-size:12px;color:var(--gray-500);">
+        🔒 บังคับแสดงเสมอ (ปิดไม่ได้): หมวดหมู่, รายละเอียดปัญหา, ชื่อผู้แจ้ง
+      </div>
+      ${UI_FIELDS.map(g => `
+        <div style="margin-bottom:18px;">
+          <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--gray-200);">${g.group}</div>
+          ${g.items.map(it => {
+            const on = cfg[it.key] !== false;
+            return `<label style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px;cursor:pointer;border-bottom:1px solid var(--gray-100);">
+              <span style="font-size:14px;">${escapeHtml(it.label)}</span>
+              <label class="toggle-switch" onclick="event.stopPropagation()">
+                <input type="checkbox" data-uikey="${it.key}" ${on?'checked':''}><span class="slider"></span>
+              </label>
+            </label>`;
+          }).join('')}
+        </div>`).join('')}
+      <button class="btn btn-primary btn-block" onclick="saveUISetting()" style="margin-top:8px;">💾 บันทึกรูปแบบของ site นี้</button>
+      <div style="font-size:11px;color:var(--gray-500);margin-top:10px;text-align:center;">💡 พนักงานจะเห็นการเปลี่ยนแปลงทันทีหลังบันทึก (โหลดหน้าใหม่)</div>
+    </div>`;
+}
+
+async function saveUISetting() {
+  const cfg = {};
+  document.querySelectorAll('#tab-uiSetting input[data-uikey]').forEach(cb => {
+    cfg[cb.dataset.uikey] = cb.checked; // true = โชว์, false = ซ่อน
+  });
+  const r = await apiPost('setUIConfig', {
+    siteId: state.user.siteId, adminKey: state.user.adminKey, config: cfg
+  });
+  if (r.ok) {
+    state.uiConfig = cfg;
+    writeCache(state.user.siteId, 'ui', cfg);
+    toast('บันทึกแล้ว', 'รูปแบบการแสดงผลอัปเดตเรียบร้อย', 'success');
+    // รีเฟรชส่วนที่กระทบทันที
+    if (state.currentTab === 'dashboard') loadDashboard();
+  } else toast('บันทึกไม่สำเร็จ', r.error, 'error');
+}
+
+/* ═══════ ส่งต่อ CJ IT (Pattern มาตรฐาน) ═══════
+   สร้างข้อความ/ไฟล์ตาม format ที่ CP กำหนด — IT Admin ใช้เพื่อเปิดเคสต่อกับ CJ IT ส่วนกลาง */
+function buildCJPattern(t) {
+  const site = state.user.siteName || state.user.siteId;
+  const buLine = t.bu ? `${site} — ${t.bu}` : site;
+  const lines = [
+    `DC / Site / BU        : ${buLine}`,
+    `User Request          : ${t.reporterName || ''}`,
+    `แผนก (Department)     : ${t.deptName || ''}`,
+    `เบอร์โทรศัพท์ (Phone)  : ${t.phone || ''}`,
+    `ระบุรายละเอียดปัญหา    : ${t.description || ''}`,
+    `เอกสาร / รูปภาพแนบ    : ${[t.imageUrl, t.fileUrl].filter(Boolean).join('  ') || ''}`,
+    `Create Ticket by CJ IT: `
+  ];
+  return lines.join('\n');
+}
+
+async function copyCJPattern(ticketId) {
+  const t = state.currentTicket;
+  if (!t || t.ticketId !== ticketId) return;
+  const text = buildCJPattern(t);
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('📋 คัดลอกแล้ว', 'ไปแปะแชท/อีเมลได้เลย', 'success');
+  } catch(e) {
+    // fallback สำหรับ browser เก่า / iOS ที่ Clipboard API ใช้ไม่ได้ในบางสถานการณ์
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast('📋 คัดลอกแล้ว', '', 'success'); }
+    catch(e2) { toast('คัดลอกไม่สำเร็จ', 'กรุณาเลือกและ copy เอง', 'error'); }
+    document.body.removeChild(ta);
+  }
+}
+
+function downloadCJWord(ticketId) {
+  const t = state.currentTicket;
+  if (!t || t.ticketId !== ticketId) return;
+  const site = state.user.siteName || state.user.siteId;
+  const buLine = t.bu ? `${site} — ${t.bu}` : site;
+  // สร้าง Word file แบบ HTML-based (.doc) — Word เปิดได้ รองรับภาษาไทย
+  const rows = [
+    ['DC / Site / BU', buLine],
+    ['User Request', t.reporterName || ''],
+    ['แผนก (Department)', t.deptName || ''],
+    ['เบอร์โทรศัพท์ (Phone)', t.phone || ''],
+    ['ระบุรายละเอียดปัญหา ที่พบ (Issue)', t.description || ''],
+    ['เอกสาร / รูปภาพแนบ', [
+      t.imageUrl ? `<a href="${escapeHtml(t.imageUrl)}">รูปภาพ</a>` : '',
+      t.fileUrl ? `<a href="${escapeHtml(t.fileUrl)}">${escapeHtml(t.fileName || 'ไฟล์แนบ')}</a>` : ''
+    ].filter(Boolean).join('<br>')],
+    ['Create Ticket by CJ IT', '']
+  ];
+  const tableRows = rows.map(([k, v]) => `
+    <tr>
+      <td style="width:32%;padding:8px 10px;border:1px solid #999;background:#f3f4f6;font-weight:bold;vertical-align:top;">${escapeHtml(k)}</td>
+      <td style="padding:8px 10px;border:1px solid #999;vertical-align:top;white-space:pre-wrap;">${k==='เอกสาร / รูปภาพแนบ' ? v : escapeHtml(String(v))}</td>
+    </tr>`).join('');
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8"><title>Ticket ${escapeHtml(t.ticketId)}</title>
+<style>body{font-family:'TH Sarabun New','Sarabun',Tahoma,sans-serif;font-size:16pt;} table{border-collapse:collapse;width:100%;}</style>
+</head><body>
+<h2 style="margin:0 0 12px 0;">Ticket Request — ${escapeHtml(t.ticketId)}</h2>
+<table>${tableRows}</table>
+<p style="font-size:11pt;color:#666;margin-top:20px;">สร้างจาก Ticket System • ${escapeHtml(String(t.createdAt))}</p>
+</body></html>`;
+  const blob = new Blob(['\ufeff' + html], { type: 'application/msword;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Ticket_${t.ticketId}_${state.user.siteId}.doc`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('📄 ดาวน์โหลดเสร็จ', a.download, 'success');
+}
+
+/* ═══════ APPROVAL SYSTEM ═══════ */
+async function loadPendingApprovals() {
+  const c = document.getElementById('tab-pendingAppr');
+  if (!c) return;
+  c.innerHTML = '<div class="loading-page"><span class="loading"></span> กำลังโหลด...</div>';
+  const params = { siteId: state.user.siteId };
+  if (state.user.isAdmin) params.adminKey = state.user.adminKey;
+  else params.positionId = state.user.positionId;
+  const r = await apiGet(state.user.isAdmin ? 'getAllTickets' : 'getPendingApprovals', params);
+  if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div class="title">โหลดไม่สำเร็จ</div></div>'; return; }
+  let pending = [], history = [];
+  if (state.user.isAdmin) {
+    // IT Admin: แยก pending vs history จาก getAllTickets
+    (r.tickets || []).forEach(t => {
+      if (t.status === 'pendingApproval') pending.push(t);
+      else if (t.status === 'approved' || t.status === 'rejected') history.push(t);
+    });
+    // เพิ่ม approved/rejected จาก Archive ถ้ามี
+    history.sort((a,b) => parseDateMs(b.approvedAt || b.updatedAt) - parseDateMs(a.approvedAt || a.updatedAt));
+  } else {
+    pending = r.tickets || [];
+    history = r.history || [];
+  }
+  updateApproverBadge(pending.length);
+  const pendingHtml = pending.length ? `
+    <div class="card" style="margin-bottom:12px;padding:12px 16px;background:#fef3c7;border-left:4px solid #f59e0b;">
+      <div style="font-weight:700;color:#78350f;">⏳ รออนุมัติ ${pending.length} คำขอ</div>
+      <div style="font-size:12px;color:#92400e;margin-top:4px;">
+        ${state.user.isAdmin ? 'คุณเป็น IT Admin — อนุมัติแทนได้ (ระบบจะบันทึกว่าอนุมัติแทน)' : 'ติกอนุมัติ / ไม่อนุมัติในแต่ละคำขอ'}
+      </div>
+    </div>
+    <div class="ticket-list">${pending.map(renderApprovalCard).join('')}</div>
+  ` : `<div class="card"><div style="text-align:center;padding:30px 20px;">
+      <div style="font-size:40px;margin-bottom:8px;">✅</div>
+      <div style="font-size:15px;font-weight:600;color:var(--gray-700);">ไม่มีคำขอรออนุมัติ</div>
+      <div style="font-size:12px;color:var(--gray-500);margin-top:6px;">พอมีคำขอใหม่ ระบบจะแจ้งเตือน</div>
+    </div></div>`;
+  const historyHtml = history.length ? `
+    <div style="margin-top:18px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 4px;">
+        <h3 style="margin:0;font-size:15px;color:var(--gray-700);">📜 ประวัติการอนุมัติ</h3>
+        <span style="font-size:12px;color:var(--gray-500);">(${history.length} รายการ)</span>
+        <div style="flex:1;"></div>
+        <input type="text" id="apprHistorySearch" class="form-control" placeholder="🔍 ค้นหา..." oninput="renderApprovalHistory()" style="max-width:200px;font-size:12px;padding:6px 10px;">
+        <select id="apprHistoryFilter" class="form-control" onchange="renderApprovalHistory()" style="max-width:150px;font-size:12px;padding:6px 10px;">
+          <option value="">ทั้งหมด</option>
+          <option value="approved">✅ อนุมัติ</option>
+          <option value="rejected">❌ ไม่อนุมัติ</option>
+          <option value="mine">🙋 ที่ฉันตัดสิน</option>
+        </select>
+      </div>
+      <div id="apprHistoryList" class="ticket-list"></div>
+    </div>` : '';
+  c.innerHTML = pendingHtml + historyHtml;
+  state.apprHistoryCache = history;
+  if (history.length) renderApprovalHistory();
+}
+
+function renderApprovalHistory() {
+  const box = document.getElementById('apprHistoryList');
+  if (!box) return;
+  const q = (document.getElementById('apprHistorySearch')?.value || '').trim().toLowerCase();
+  const filter = document.getElementById('apprHistoryFilter')?.value || '';
+  const myName = state.user.position;
+  let list = state.apprHistoryCache || [];
+  if (filter === 'approved') list = list.filter(t => t.status === 'approved');
+  else if (filter === 'rejected') list = list.filter(t => t.status === 'rejected');
+  else if (filter === 'mine') list = list.filter(t => t.approvedBy && String(t.approvedBy).includes(myName));
+  if (q) list = list.filter(t => ticketMatchesSearch(t, q));
+  if (!list.length) { box.innerHTML = '<div class="empty-state" style="padding:20px;"><div style="font-size:13px;color:var(--gray-500);">ไม่พบรายการ</div></div>'; return; }
+  box.innerHTML = list.slice(0, 100).map(renderHistoryCard).join('') + (list.length > 100 ? `<div style="text-align:center;padding:10px;font-size:12px;color:var(--gray-500);">แสดง 100 จาก ${list.length} รายการ (ใช้ตัวกรองเพื่อดูเพิ่ม)</div>` : '');
+}
+
+function renderHistoryCard(t) {
+  const isApproved = t.status === 'approved';
+  const color = isApproved ? '#10b981' : '#ef4444';
+  const bg = isApproved ? '#d1fae5' : '#fee2e2';
+  const txt = isApproved ? '✅ อนุมัติ' : '❌ ไม่อนุมัติ';
+  const txtColor = isApproved ? '#065f46' : '#991b1b';
+  return `
+    <div class="ticket-card" style="border-left:4px solid ${color};padding:12px;cursor:pointer;" onclick="openTicketDetail('${t.ticketId}')">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+            <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${bg};color:${txtColor};font-weight:600;">${txt}</span>
+            ${t._archived ? '<span style="font-size:10px;color:var(--gray-500);">📁 เก็บแล้ว</span>' : ''}
+            <span style="font-size:11px;color:var(--gray-500);">${escapeHtml(String(t.approvedAt || t.updatedAt))}</span>
+          </div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">${escapeHtml(t.title)}</div>
+          <div style="font-size:11px;color:var(--gray-600);">
+            📂 ${escapeHtml(t.category)} → ${escapeHtml(t.subCategory)} • 👤 ${escapeHtml(t.reporterName)}${t.bu ? ' • 🏷️ ' + escapeHtml(t.bu) : ''}
+          </div>
+          <div style="font-size:11px;color:var(--gray-500);margin-top:4px;">
+            ตัดสินโดย: <strong>${escapeHtml(t.approvedBy || '-')}</strong>
+            ${t.rejectionReason ? `<div style="color:#991b1b;margin-top:2px;">เหตุผล: ${escapeHtml(t.rejectionReason)}</div>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderApprovalCard(t) {
+  return `
+    <div class="ticket-card" style="border-left:4px solid #f59e0b;padding:14px;">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px;">${escapeHtml(t.title)}</div>
+          <div style="font-size:12px;color:var(--gray-600);margin-bottom:8px;">
+            📂 ${escapeHtml(t.category)} → ${escapeHtml(t.subCategory)}${t.bu ? ' • 🏷️ ' + escapeHtml(t.bu) : ''}
+          </div>
+          <div style="font-size:13px;color:var(--gray-700);white-space:pre-wrap;padding:8px;background:var(--gray-50);border-radius:6px;margin-bottom:8px;">${escapeHtml(t.description)}</div>
+          <div style="font-size:11px;color:var(--gray-500);">
+            👤 ${escapeHtml(t.reporterName)} • 🏢 ${escapeHtml(t.deptName)} • 🕒 ${escapeHtml(String(t.createdAt))}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-success" style="flex:1;" onclick="doApprove('${t.ticketId}')">✅ อนุมัติ</button>
+        <button class="btn btn-danger" style="flex:1;" onclick="doReject('${t.ticketId}')">❌ ไม่อนุมัติ</button>
+        <button class="btn btn-secondary" onclick="openTicketDetail('${t.ticketId}')">👁️ ดู</button>
+      </div>
+    </div>`;
+}
+
+async function doApprove(ticketId) {
+  if (!confirm('อนุมัติคำขอนี้?')) return;
+  const params = { siteId: state.user.siteId, ticketId };
+  if (state.user.isAdmin) params.adminKey = state.user.adminKey;
+  else { params.positionId = state.user.positionId; params.password = state.user.approverPassword; }
+  const r = await apiPost('approveTicket', params);
+  if (r.ok) {
+    toast('✅ อนุมัติเรียบร้อย', '', 'success');
+    loadPendingApprovals();
+  } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+async function doReject(ticketId) {
+  const reason = prompt('กรุณาระบุเหตุผลที่ไม่อนุมัติ:');
+  if (!reason || !reason.trim()) return;
+  const params = { siteId: state.user.siteId, ticketId, reason: reason.trim() };
+  if (state.user.isAdmin) params.adminKey = state.user.adminKey;
+  else { params.positionId = state.user.positionId; params.password = state.user.approverPassword; }
+  const r = await apiPost('rejectTicket', params);
+  if (r.ok) {
+    toast('❌ ไม่อนุมัติแล้ว', '', 'success');
+    loadPendingApprovals();
+  } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+
+function updateApproverBadge(n) {
+  const badge = document.getElementById('pendingApprBadge');
+  if (!badge) return;
+  if (n > 0) { badge.textContent = n; badge.style.display = 'inline-flex'; }
+  else badge.style.display = 'none';
+}
+
+function startApproverPoll() {
+  // เช็ค pending approvals ทุก 60 วิ (adaptive)
+  const poll = async () => {
+    try {
+      const params = { siteId: state.user.siteId };
+      let list = [];
+      if (state.user.isAdmin) {
+        const r = await apiGet('getAllTickets', { siteId: state.user.siteId });
+        if (r.ok) list = r.tickets.filter(t => t.status === 'pendingApproval');
+      } else if (state.user.isApprover) {
+        const r = await apiGet('getPendingApprovals', { siteId: state.user.siteId, positionId: state.user.positionId });
+        if (r.ok) list = r.tickets;
+      }
+      const prev = state.lastApproverCount || 0;
+      updateApproverBadge(list.length);
+      if (list.length > prev && state.soundOn && state.audioCtx) playDing();
+      state.lastApproverCount = list.length;
+    } catch(e) {}
+  };
+  poll();
+  if (state.approverPollTimer) clearInterval(state.approverPollTimer);
+  state.approverPollTimer = setInterval(poll, 60000);
+}
+
+/* ═══════ INIT (โหลดหน้า / กู้ session) ═══════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  // โหลดค่าเสียงที่จำไว้ (ค่าเริ่มต้น = เปิด) + เตรียมเสียงให้พร้อมทันทีที่มีการคลิกครั้งแรก
+  state.soundOn = loadSoundPref();
+  if (!state.soundOn) {
+    const icon = document.getElementById('soundIcon'), label = document.getElementById('soundLabel'), btn = document.getElementById('soundToggle');
+    if (icon) icon.textContent = '🔕';
+    if (label) label.textContent = 'เปิดเสียง';
+    if (btn) btn.classList.add('off');
+  }
+  armAudioOnFirstInteraction();
+
+  const sess = loadSession();
+  if (sess && sess.superMode) {
+    state.superMode = true; state.superKey = sess.superKey;
+    enterSuperApp();
+    return;
+  }
+  if (sess && sess.user) {
+    state.user = sess.user;
+    // ต้องมีรายชื่อ sites ไว้ให้ dashboard/notif ใช้
+    try { const r = await apiGet('getSites'); if (r.ok) state.sites = r.sites; } catch(e) {}
+    enterApp();
+    // โหลด site grid เผื่อ logout
+    loadSites();
+    return;
+  }
+  showView('siteSelectView');
+  loadSites();
+});
+
+</script>
+</body>
+</html>
