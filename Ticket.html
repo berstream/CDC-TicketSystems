@@ -2129,6 +2129,7 @@ function renderPositionTable() {
             ${p.isAdmin
               ? `<button class="btn btn-danger btn-sm" onclick="setAdminRole('${p.id}',false)" title="ถอดสิทธิ์ Admin">🛡️➖</button>`
               : (p.active ? `<button class="btn btn-primary btn-sm" onclick="setAdminRole('${p.id}',true)" title="ตั้งเป็น Admin">🛡️➕</button>` : '')}
+            ${!p.isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deletePosition('${p.id}')" title="ลบตำแหน่ง">🗑️</button>` : ''}
           </td></tr>`).join('')}
       </tbody></table></div>`;
 }
@@ -2183,6 +2184,15 @@ async function togglePosition(id) {
   if (!p || !confirm((p.active?'ปิด':'เปิด') + 'ใช้งาน "' + p.name + '"?')) return;
   const r = await apiPost('managePosition', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'toggle', positionId: id });
   if (r.ok) { toast('อัปเดตแล้ว', '', 'success'); loadPositionMgmt(); } else toast('ไม่สำเร็จ', r.error, 'error');
+}
+async function deletePosition(id) {
+  const p = state.allPositions.find(x => x.id === id);
+  if (!p) return;
+  if (p.isAdmin) { toast('ลบไม่ได้', 'ถอดสิทธิ์ Admin ก่อน', 'warning'); return; }
+  if (!confirm(`⚠️ ลบตำแหน่ง "${p.name}" (${p.deptName})?\n\nการลบนี้ถาวร กู้คืนไม่ได้\nticket เก่าที่เคยแจ้ง/รับงานไว้ไม่กระทบ`)) return;
+  const r = await apiPost('managePosition', { siteId: state.user.siteId, adminKey: state.user.adminKey, subAction:'delete', positionId: id });
+  if (r.ok) { toast('ลบแล้ว', p.name, 'success'); loadPositionMgmt(); }
+  else toast('ลบไม่สำเร็จ', r.error, 'error');
 }
 async function resetPositionPassword(id) {
   const p = state.allPositions.find(x => x.id === id);
