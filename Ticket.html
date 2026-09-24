@@ -177,8 +177,32 @@ textarea.form-control { resize:vertical; min-height:85px; }
 .comment-bubble { max-width:85%; padding:9px 12px; border-radius:12px; font-size:13px; background:#fff; border:1px solid var(--gray-200); }
 .comment-item.admin .comment-bubble { background:#dbeafe; border-color:#bfdbfe; }
 .comment-meta { font-size:10px; color:var(--gray-400); margin-top:3px; }
-.comment-input-row { display:flex; gap:8px; }
-.comment-input-row input { flex:1; }
+.comment-input-row { display:flex; gap:8px; align-items:center; }
+.comment-input-row input { flex:1; min-width:0; }
+/* แนบรูป/ไฟล์ในการสนทนา */
+.cmt-attach-btn { width:42px; height:42px; flex-shrink:0; border:1.5px solid var(--gray-300); background:#fff; border-radius:8px; cursor:pointer; font-size:19px; display:flex; align-items:center; justify-content:center; transition:.15s; }
+.cmt-attach-btn:hover { border-color:var(--primary); background:#eff6ff; }
+.cmt-attach-btn:disabled { opacity:.5; cursor:not-allowed; }
+.cmt-preview { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+.cmt-preview:empty { display:none; }
+.cmt-chip { display:inline-flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--gray-300); border-radius:10px; padding:6px 8px; font-size:12px; max-width:240px; }
+.cmt-chip img { width:38px; height:38px; border-radius:6px; object-fit:cover; flex-shrink:0; }
+.cmt-chip .ic { font-size:22px; width:34px; text-align:center; flex-shrink:0; }
+.cmt-chip .meta { display:flex; flex-direction:column; overflow:hidden; }
+.cmt-chip .meta .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+.cmt-chip .meta .s { color:var(--gray-500); font-size:10px; }
+.cmt-chip .rm { background:none; border:none; color:var(--danger); cursor:pointer; font-size:14px; flex-shrink:0; padding:0 2px; }
+.comment-bubble.only-attach { padding:6px; }
+.cmt-img { margin-top:6px; display:block; max-width:180px; max-height:160px; border-radius:8px; border:1px solid var(--gray-200); cursor:zoom-in; object-fit:cover; }
+.comment-bubble.only-attach .cmt-img, .comment-bubble.only-attach .cmt-file { margin-top:0; }
+.cmt-file { margin-top:6px; display:flex; width:fit-content; align-items:center; gap:8px; background:var(--gray-50); border:1px solid var(--gray-200); border-radius:8px; padding:7px 10px; text-decoration:none; color:var(--gray-800); font-size:12px; max-width:230px; }
+.cmt-file:hover { border-color:var(--primary); background:#eff6ff; }
+.cmt-file .fname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cmt-file .dl { color:var(--primary); font-weight:700; flex-shrink:0; }
+.cmt-hint { font-size:10px; color:var(--gray-400); margin-top:6px; }
+.img-lightbox { position:fixed; inset:0; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center; z-index:3000; padding:20px; cursor:zoom-out; }
+.img-lightbox.show { display:flex; }
+.img-lightbox img { max-width:100%; max-height:100%; border-radius:8px; }
 
 /* ── RATING ── */
 .stars { display:flex; gap:4px; font-size:26px; cursor:pointer; }
@@ -1194,6 +1218,7 @@ async function openTicketDetail(ticketId, siteId) {
   state.currentTicket = r.ticket;
   state.currentTicket._siteId = sid;
   state.pendingStatus = r.ticket.status;
+  resetCmtAttach(); // ล้างรูป/ไฟล์ที่เลือกค้างจาก ticket ก่อนหน้า
 
   if (state.user && state.user.isAdmin) markTicketRead(ticketId);
   else if (state.user) {
@@ -1307,10 +1332,16 @@ function renderTicketModal() {
     ${uiShow('comment') ? `<div style="margin-top:16px;">
       <div style="font-weight:700;font-size:13px;margin-bottom:8px;">💬 การสนทนา</div>
       <div class="comment-thread" id="commentThread"><div class="loading-page"><span class="loading"></span></div></div>
+      <div class="cmt-preview" id="cmtPreview"></div>
       <div class="comment-input-row">
-        <input type="text" class="form-control" id="commentInput" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendComment()">
-        <button class="btn btn-primary" onclick="sendComment()">ส่ง</button>
+        <button type="button" class="cmt-attach-btn" id="cmtImgBtn" title="แนบรูป" onclick="document.getElementById('cmtImgInput').click()">📷</button>
+        <button type="button" class="cmt-attach-btn" id="cmtFileBtn" title="แนบไฟล์" onclick="document.getElementById('cmtFileInput').click()">📎</button>
+        <input type="text" class="form-control" id="commentInput" placeholder="พิมพ์ข้อความ... (หรือแนบไฟล์อย่างเดียว)" onkeydown="if(event.key==='Enter')sendComment()">
+        <button class="btn btn-primary" id="cmtSendBtn" onclick="sendComment()">ส่ง</button>
       </div>
+      <input type="file" id="cmtImgInput" accept="image/*" style="display:none" onchange="onCmtImgSelect(event)">
+      <input type="file" id="cmtFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" style="display:none" onchange="onCmtFileSelect(event)">
+      <div class="cmt-hint">📷 รูปย่ออัตโนมัติ • 📎 PDF/Word/Excel/PPT/txt/csv ≤3MB • แนบได้ทั้งรูปและไฟล์ในข้อความเดียว</div>
     </div>` : ''}`;
 
   if (isAdmin) {
@@ -1334,6 +1365,7 @@ async function loadComments() {
   const r = await apiGet('getComments', { siteId: t._siteId, ticketId: t.ticketId });
   const el = document.getElementById('commentThread');
   if (!el) return;
+  renderCmtPreview(); // คง preview ไฟล์ที่เลือกไว้ หลัง modal re-render
   if (!r.ok) { el.innerHTML = '<div class="notif-empty">โหลดไม่สำเร็จ</div>'; return; }
   state.currentComments = r.comments;
   if (!r.comments.length) { el.innerHTML = '<div class="notif-empty">ยังไม่มีข้อความ — เริ่มสนทนาได้เลย</div>'; return; }
@@ -1341,9 +1373,12 @@ async function loadComments() {
   el.innerHTML = r.comments.map(c => {
     const isMine = String(c.by) === String(myName);
     const canDelete = isMine || state.user.isAdmin;
+    const msgHtml = c.message ? escapeHtml(c.message) : '';
+    const imgHtml = c.imageUrl ? `<img class="cmt-img" src="${escapeHtml(c.imageUrl)}" onclick="openCmtImage(this.src)" onerror="this.outerHTML='<a class=&quot;cmt-file&quot; href=&quot;${escapeHtml(c.imageUrl)}&quot; target=&quot;_blank&quot;>🖼️ <span class=&quot;fname&quot;>เปิดรูปภาพ</span></a>'">` : '';
+    const fileHtml = c.fileUrl ? `<a class="cmt-file" href="${escapeHtml(c.fileUrl)}" target="_blank" rel="noopener"><span style="font-size:20px;">${fileIcon(c.fileName || '')}</span><span class="fname">${escapeHtml(c.fileName || 'ไฟล์แนบ')}</span><span class="dl">⬇</span></a>` : '';
     return `
     <div class="comment-item ${c.role === 'admin' ? 'admin' : ''}" data-cid="${c.id}">
-      <div class="comment-bubble">${escapeHtml(c.message)}</div>
+      <div class="comment-bubble${msgHtml ? '' : ' only-attach'}">${msgHtml}${imgHtml}${fileHtml}</div>
       <div class="comment-meta">${c.role === 'admin' ? '🛠️' : '👤'} ${escapeHtml(c.by)} • ${escapeHtml(c.createdAt)}${c.editedAt ? ' • แก้ไขแล้ว' : ''}
         ${isMine ? `<button onclick="startEditComment('${c.id}')" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:10px;padding:0 4px;">แก้</button>` : ''}
         ${canDelete ? `<button onclick="doDeleteComment('${c.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:10px;padding:0;">ลบ</button>` : ''}
@@ -1371,7 +1406,8 @@ function startEditComment(cid) {
 
 async function saveEditComment(cid) {
   const val = document.getElementById('editCmt_' + cid).value.trim();
-  if (!val) return;
+  const orig = state.currentComments.find(x => x.id === cid);
+  if (!val && !(orig && (orig.imageUrl || orig.fileUrl))) return;
   const t = state.currentTicket;
   const myName = state.user.isAdmin ? state.user.position : (t.reporterName || state.user.position);
   const r = await apiPost('editComment', { siteId: t._siteId, commentId: cid, message: val, by: myName });
@@ -1388,20 +1424,97 @@ async function doDeleteComment(cid) {
   else toast('ลบไม่สำเร็จ', r.error, 'error');
 }
 
+/* ═══════ แนบรูป/ไฟล์ในการสนทนา ═══════ */
+let cmtImgData = null;   // { dataUrl, base64, mimeType, filename }
+let cmtFileData = null;  // { base64, filename, mimeType, size }
+
+function resetCmtAttach() {
+  cmtImgData = null; cmtFileData = null;
+  renderCmtPreview();
+}
+async function onCmtImgSelect(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { toast('ไม่ใช่ไฟล์รูปภาพ', '', 'warning'); return; }
+  cmtImgData = await compressImage(file);
+  renderCmtPreview();
+}
+async function onCmtFileSelect(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (ALLOWED_EXT.indexOf(ext) === -1) { toast('ไฟล์ไม่รองรับ', 'อนุญาต: ' + ALLOWED_EXT.join(', '), 'warning'); return; }
+  if (file.size > MAX_FILE_BYTES) { toast('ไฟล์ใหญ่เกินไป', 'ขนาด ' + fmtBytes(file.size) + ' — สูงสุด 3MB', 'warning'); return; }
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  cmtFileData = { base64, filename: file.name, mimeType: file.type || 'application/octet-stream', size: file.size };
+  renderCmtPreview();
+}
+function renderCmtPreview() {
+  const box = document.getElementById('cmtPreview');
+  if (!box) return;
+  let h = '';
+  if (cmtImgData) h += `<div class="cmt-chip"><img src="${cmtImgData.dataUrl}"><div class="meta"><span class="n">${escapeHtml(cmtImgData.filename || 'รูปภาพ')}</span><span class="s">รูปภาพ</span></div><button type="button" class="rm" title="เอาออก" onclick="cmtImgData=null;renderCmtPreview()">✕</button></div>`;
+  if (cmtFileData) h += `<div class="cmt-chip"><span class="ic">${fileIcon(cmtFileData.filename)}</span><div class="meta"><span class="n">${escapeHtml(cmtFileData.filename)}</span><span class="s">${fmtBytes(cmtFileData.size)}</span></div><button type="button" class="rm" title="เอาออก" onclick="cmtFileData=null;renderCmtPreview()">✕</button></div>`;
+  box.innerHTML = h;
+}
+function openCmtImage(src) {
+  let lb = document.getElementById('cmtLightbox');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'cmtLightbox'; lb.className = 'img-lightbox';
+    lb.onclick = () => lb.classList.remove('show');
+    lb.innerHTML = '<img alt="">';
+    document.body.appendChild(lb);
+  }
+  lb.querySelector('img').src = src;
+  lb.classList.add('show');
+}
+function setCmtBusy(busy, label) {
+  ['commentInput','cmtImgBtn','cmtFileBtn','cmtSendBtn'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = busy; });
+  const btn = document.getElementById('cmtSendBtn');
+  if (btn) btn.innerHTML = busy ? '<span class="loading"></span>' + (label ? ' ' + label : '') : 'ส่ง';
+}
+
 async function sendComment() {
   const input = document.getElementById('commentInput');
   const msg = input.value.trim();
-  if (!msg) return;
+  if (!msg && !cmtImgData && !cmtFileData) return;
   const t = state.currentTicket;
-  input.disabled = true;
-  const r = await apiPost('addComment', {
-    siteId: t._siteId, ticketId: t.ticketId, message: msg,
-    by: state.user.isAdmin ? state.user.position : (t.reporterName || state.user.position),
-    role: state.user.isAdmin ? 'admin' : 'user'
-  });
-  input.disabled = false;
-  if (r.ok) { input.value = ''; loadComments(); }
-  else toast('ส่งไม่สำเร็จ', r.error, 'error');
+  try {
+    let imageUrl = '', fileUrl = '', fileName = '';
+    if (cmtImgData) {
+      setCmtBusy(true, 'รูป...');
+      const up = await apiPost('uploadImage', { base64: cmtImgData.base64, mimeType: cmtImgData.mimeType, filename: cmtImgData.filename });
+      if (!up.ok) { toast('อัปโหลดรูปไม่สำเร็จ', up.error || '', 'error'); return; }
+      imageUrl = up.url;
+    }
+    if (cmtFileData) {
+      setCmtBusy(true, 'ไฟล์...');
+      const uf = await apiPost('uploadFile', { base64: cmtFileData.base64, filename: cmtFileData.filename, mimeType: cmtFileData.mimeType });
+      if (!uf.ok) { toast('อัปโหลดไฟล์ไม่สำเร็จ', uf.error || '', 'error'); return; }
+      fileUrl = uf.url; fileName = uf.fileName || cmtFileData.filename;
+    }
+    setCmtBusy(true);
+    const r = await apiPost('addComment', {
+      siteId: t._siteId, ticketId: t.ticketId, message: msg,
+      imageUrl, fileUrl, fileName,
+      by: state.user.isAdmin ? state.user.position : (t.reporterName || state.user.position),
+      role: state.user.isAdmin ? 'admin' : 'user'
+    });
+    if (r.ok) { input.value = ''; resetCmtAttach(); loadComments(); }
+    else toast('ส่งไม่สำเร็จ', r.error, 'error');
+  } catch (err) {
+    toast('ส่งไม่สำเร็จ', String(err), 'error');
+  } finally {
+    setCmtBusy(false);
+  }
 }
 
 async function submitRating(n) {
