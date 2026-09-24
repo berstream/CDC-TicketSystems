@@ -177,6 +177,7 @@ textarea.form-control { resize:vertical; min-height:85px; }
 .comment-bubble { max-width:85%; padding:9px 12px; border-radius:12px; font-size:13px; background:#fff; border:1px solid var(--gray-200); }
 .comment-item.admin .comment-bubble { background:#dbeafe; border-color:#bfdbfe; }
 .comment-meta { font-size:10px; color:var(--gray-400); margin-top:3px; }
+.tid-badge { font-size:10px; font-weight:700; color:var(--primary); background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:1px 7px; white-space:nowrap; }
 .comment-input-row { display:flex; gap:8px; align-items:center; }
 .comment-input-row input { flex:1; min-width:0; }
 /* แนบรูป/ไฟล์ในการสนทนา */
@@ -811,8 +812,6 @@ function renderSubmitForm() {
         </select>
         ${state.bus.length === 0 ? '<div style="font-size:11px;color:var(--warning);margin-top:4px;">⚠️ ยังไม่มี BU — แจ้ง IT Admin เพิ่มในเมนูจัดการ</div>' : ''}
       </div>` : ''}
-      <div class="form-group"><label>ชื่อปัญหา <span class="req">*</span></label>
-        <input type="text" id="f_title" class="form-control" placeholder="เช่น Router ห้อง Pack ใช้งานไม่ได้"></div>
       <div class="form-group"><label>หมวดหมู่หลัก <span class="req">*</span></label>
         <select id="f_main" class="form-control" onchange="onMainCatChange()">
           <option value="">-- เลือกหมวดหมู่ --</option>
@@ -820,6 +819,8 @@ function renderSubmitForm() {
         </select></div>
       <div class="form-group"><label>หมวดหมู่ย่อย <span class="req">*</span></label>
         <select id="f_sub" class="form-control" disabled><option value="">-- เลือกหมวดหมู่หลักก่อน --</option></select></div>
+      <div class="form-group"><label>หัวข้อปัญหา <span class="req">*</span></label>
+        <input type="text" id="f_title" class="form-control" placeholder="เช่น Router ห้อง Pack ใช้งานไม่ได้"></div>
       ${showPrio ? `<div class="form-group"><label>ระดับความเร่งด่วน <span class="req">*</span></label>
         <div class="priority-group" id="prioGroup">
           <button type="button" class="priority-btn urgent" data-prio="urgent" onclick="selectPriority('urgent')">🔴 เร่งด่วน</button>
@@ -999,7 +1000,7 @@ async function submitTicket() {
       bu, phone, fileUrl, fileName
     });
     if (r.ok) {
-      toast('ส่ง Ticket สำเร็จ', 'หมายเลข: ' + r.ticketId, 'success');
+      toast('ส่ง Ticket สำเร็จ', 'หมายเลข: ' + cjId(r.ticketId), 'success');
       clearDraft(); resetSubmitForm();
     } else toast('ส่งไม่สำเร็จ', r.error || '', 'error');
   } catch(e) { toast('เกิดข้อผิดพลาด', e.message, 'error'); }
@@ -1071,7 +1072,7 @@ function restoreDraft() {
 async function loadMyTickets() {
   const c = document.getElementById('tab-myTickets');
   c.innerHTML = '<div class="loading-page"><span class="loading"></span> กำลังโหลด...</div>';
-  const r = await apiGet('getTickets', { siteId: state.user.siteId, deptId: state.user.deptId });
+  const r = await apiGet('getTickets', { siteId: state.user.siteId, deptId: state.user.deptId, position: state.user.position });
   if (!r.ok) { c.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div class="title">โหลดไม่สำเร็จ</div></div>'; return; }
   state.tickets = r.tickets;
   renderMyTickets();
@@ -1084,8 +1085,6 @@ function renderMyTickets() {
   }
   const g = { pending:[], inProgress:[], resolved:[], pendingApproval:[], approved:[], rejected:[] };
   state.tickets.forEach(t => (g[t.status] || g.pending).push(t));
-  const myName = state.user.position;
-  const myCount = state.tickets.filter(t => t.reporterName === myName).length;
   c.innerHTML = `
     <div class="filter-bar">
       <div class="form-group" style="flex:2;min-width:180px;">
@@ -1106,10 +1105,6 @@ function renderMyTickets() {
         <button class="btn btn-secondary" onclick="loadMyTickets()">🔄</button></div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 4px;">
-      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none;">
-        <input type="checkbox" id="myOnlyChk" onchange="renderMyTicketsList()" style="width:16px;height:16px;accent-color:var(--primary);">
-        🙋 เฉพาะที่ฉันแจ้ง (${myCount})
-      </label>
       <span id="myListCount" style="font-size:12px;color:var(--gray-500);"></span>
     </div>
     <div class="ticket-list" id="myTicketList"></div>
@@ -1118,9 +1113,12 @@ function renderMyTickets() {
   renderMyTicketsList();
 }
 
+/** เลข Ticket สำหรับแสดงผล — เติม CJ นำหน้า (ข้อมูลในชีตยังเป็นเลขล้วน) */
+function cjId(id) { return 'CJ : ' + (id == null ? '' : id); }
+
 function ticketMatchesSearch(t, q) {
   if (!q) return true;
-  const hay = [t.ticketId,t.title,t.description,t.reporterName,t.category,t.subCategory,t.deptName,t.adminNote,t.bu,t.phone,t.assignedTo]
+  const hay = [t.ticketId,cjId(t.ticketId),'CJ'+t.ticketId,t.title,t.description,t.reporterName,t.category,t.subCategory,t.deptName,t.adminNote,t.bu,t.phone,t.assignedTo]
     .map(x => String(x||'').toLowerCase()).join(' ');
   return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
 }
@@ -1129,13 +1127,10 @@ const MY_PAGE_SIZE = 50;
 function renderMyTicketsList() {
   const f = document.getElementById('myFilterStatus')?.value || '';
   const q = document.getElementById('myFilterSearch')?.value.trim() || '';
-  const onlyMine = document.getElementById('myOnlyChk')?.checked || false;
-  const myName = state.user.position;
   const list = document.getElementById('myTicketList');
   const pager = document.getElementById('myPager');
   const countEl = document.getElementById('myListCount');
   let filtered = f ? state.tickets.filter(t => t.status === f) : state.tickets;
-  if (onlyMine) filtered = filtered.filter(t => t.reporterName === myName);
   filtered = filtered.filter(t => ticketMatchesSearch(t, q));
   if (countEl) countEl.textContent = 'พบ ' + filtered.length + ' รายการ';
   if (!filtered.length) { list.innerHTML = '<div class="empty-state"><div class="title">ไม่มีรายการ</div></div>'; if (pager) pager.innerHTML = ''; return; }
@@ -1164,7 +1159,7 @@ function ticketCardHTML(t, opt = {}) {
       ${opt.selectable ? `<input type="checkbox" class="ticket-check" data-tid="${t.ticketId}" onclick="event.stopPropagation();toggleSelect('${t.ticketId}',this)" ${state.selectedTickets.has(t.ticketId) ? 'checked' : ''}>` : ''}
       <div class="ticket-icon ${t.status}">${icons[t.status] || '⏳'}</div>
       <div class="ticket-body">
-        <div class="ticket-title">${escapeHtml(t.title)}
+        <div class="ticket-title"><span class="tid-badge">${escapeHtml(cjId(t.ticketId))}</span> ${escapeHtml(t.title)}
           ${cc > 0 && uiShow('comment') ? `<span class="comment-badge">💬 ${cc}</span>` : ''}
           ${age ? `<span class="age-badge ${age.cls}">${age.label}</span>` : ''}
           ${t.status === 'resolved' && t.resolveDurationHrs !== '' && t.resolveDurationHrs != null ? `<span class="age-badge" style="background:#d1fae5;color:#065f46;">✓ ${fmtDuration(t.resolveDurationHrs)}</span>` : ''}
@@ -1260,9 +1255,9 @@ function renderTicketModal() {
   const t = state.currentTicket;
   const isAdmin = state.user && state.user.isAdmin;
   const isOwner = state.user && !state.user.isAdmin;
-  document.getElementById('modalTitle').textContent = 'Ticket: ' + t.ticketId;
+  document.getElementById('modalTitle').textContent = 'Ticket ' + cjId(t.ticketId);
   document.getElementById('modalBody').innerHTML = `
-    <div class="detail-row"><div class="label">ชื่อปัญหา</div><div class="value"><strong>${escapeHtml(t.title)}</strong></div></div>
+    <div class="detail-row"><div class="label">หัวข้อปัญหา</div><div class="value"><strong>${escapeHtml(t.title)}</strong></div></div>
     <div class="detail-row"><div class="label">สถานะ</div><div class="value"><span class="status-badge status-${t.status}">${statusText(t.status)}</span></div></div>
     ${uiShow('priority') ? `<div class="detail-row"><div class="label">ความเร่งด่วน</div><div class="value">${prioText(t.priority)}</div></div>` : ''}
     <div class="detail-row"><div class="label">หมวดหมู่</div><div class="value">${escapeHtml(t.category)} → ${escapeHtml(t.subCategory)}</div></div>
@@ -1986,7 +1981,7 @@ function previewExport() {
   el.style.display = 'block';
   el.innerHTML = `<strong>พบ ${list.length} Ticket</strong><div style="color:var(--gray-600);margin-top:4px;">ตัวกรอง: ${escapeHtml(filterText)}</div>
     <hr style="margin:8px 0;border:none;border-top:1px solid var(--gray-200);">
-    ${list.slice(0,5).map(t => `<div style="padding:3px 0;">• ${escapeHtml(t.ticketId)} — ${escapeHtml(t.title)}</div>`).join('')}
+    ${list.slice(0,5).map(t => `<div style="padding:3px 0;">• ${escapeHtml(cjId(t.ticketId))} — ${escapeHtml(t.title)}</div>`).join('')}
     ${list.length > 5 ? `<div style="color:var(--gray-500);margin-top:4px;">... และอีก ${list.length-5} รายการ</div>` : ''}`;
   document.getElementById('exportButtons').style.display = 'flex';
 }
@@ -1994,9 +1989,9 @@ function previewExport() {
 function doExportExcel() {
   const { list, filterText } = getExportFiltered();
   if (!list.length) { toast('ไม่มีข้อมูล', '', 'warning'); return; }
-  const headers = ['TicketID','วันที่แจ้ง','สถานะ','ความเร่งด่วน','BU','แผนก','หมวดหมู่','หมวดย่อย','ชื่อปัญหา','รายละเอียด','ผู้แจ้ง','เบอร์โทร','ผู้รับผิดชอบ','หมายเหตุ Admin','เริ่มทำ','ปิดงาน','เวลาแก้(ชม.)','คะแนน'];
+  const headers = ['TicketID','วันที่แจ้ง','สถานะ','ความเร่งด่วน','BU','แผนก','หมวดหมู่','หมวดย่อย','หัวข้อปัญหา','รายละเอียด','ผู้แจ้ง','เบอร์โทร','ผู้รับผิดชอบ','หมายเหตุ Admin','เริ่มทำ','ปิดงาน','เวลาแก้(ชม.)','คะแนน'];
   const rows = list.map(t => [
-    t.ticketId, t.createdAt, statusText(t.status), prioText(t.priority).replace(/[🔴🟡🟢]/g,'').trim(),
+    cjId(t.ticketId), t.createdAt, statusText(t.status), prioText(t.priority).replace(/[🔴🟡🟢]/g,'').trim(),
     t.bu, t.deptName, t.category, t.subCategory, t.title, t.description,
     t.reporterName, t.phone, t.assignedTo, t.adminNote,
     t.startedAt, t.resolvedAt, t.resolveDurationHrs, t.rating
@@ -2041,7 +2036,7 @@ function renderDetailPDF(list, filterText) {
     <div style="text-align:center;color:#666;margin-bottom:14px;font-size:10px;">${escapeHtml(filterText)} | ${list.length} Ticket | ${new Date().toLocaleString('th-TH')}</div>
     ${list.map((t,i) => `
       <div style="border:1px solid #ddd;border-radius:6px;padding:9px;margin-bottom:8px;page-break-inside:avoid;">
-        <div style="display:flex;justify-content:space-between;"><strong style="font-size:12px;">${i+1}. ${escapeHtml(t.title)}</strong><span style="font-size:9px;">[${t.ticketId}]</span></div>
+        <div style="display:flex;justify-content:space-between;"><strong style="font-size:12px;">${i+1}. ${escapeHtml(t.title)}</strong><span style="font-size:9px;">[${escapeHtml(cjId(t.ticketId))}]</span></div>
         <table style="width:100%;font-size:9px;border-collapse:collapse;margin-top:4px;">
           <tr><td style="width:80px;color:#666;padding:2px;">แผนก:</td><td>${escapeHtml(t.deptName)}</td><td style="width:80px;color:#666;">BU:</td><td>${escapeHtml(t.bu||'-')}</td></tr>
           <tr><td style="color:#666;padding:2px;">หมวด:</td><td>${escapeHtml(t.category)} → ${escapeHtml(t.subCategory)}</td><td style="color:#666;">สถานะ:</td><td>${statusText(t.status)}</td></tr>
@@ -2072,7 +2067,7 @@ function renderSummaryPDF(list, filterText) {
       <table style="width:100%;border-collapse:collapse;font-size:8px;margin-top:4px;">
       <thead><tr style="background:#e5e7eb;"><th style="padding:3px;border:1px solid #ccc;">ID</th><th style="padding:3px;border:1px solid #ccc;text-align:left;">ปัญหา</th><th style="padding:3px;border:1px solid #ccc;">BU</th><th style="padding:3px;border:1px solid #ccc;">หมวด</th><th style="padding:3px;border:1px solid #ccc;">ผู้แจ้ง</th><th style="padding:3px;border:1px solid #ccc;">สถานะ</th><th style="padding:3px;border:1px solid #ccc;">วันที่</th></tr></thead><tbody>`;
     grouped[dept].forEach(t => {
-      html += `<tr><td style="padding:3px;border:1px solid #ccc;">${t.ticketId}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.title)}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.bu||'-')}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.subCategory)}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.reporterName)}</td><td style="padding:3px;border:1px solid #ccc;">${statusText(t.status)}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(String(t.createdAt).substring(0,10))}</td></tr>`;
+      html += `<tr><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(cjId(t.ticketId))}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.title)}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.bu||'-')}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.subCategory)}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(t.reporterName)}</td><td style="padding:3px;border:1px solid #ccc;">${statusText(t.status)}</td><td style="padding:3px;border:1px solid #ccc;">${escapeHtml(String(t.createdAt).substring(0,10))}</td></tr>`;
     });
     html += '</tbody></table>';
   });
@@ -2506,7 +2501,7 @@ async function loadArchive() {
 }
 function exportArchiveCSV() {
   const headers = ['TicketID','DeptName','BU','Category','SubCategory','Title','Status','Priority','Reporter','Phone','AssignedTo','Rating','CreatedAt','ArchivedAt'];
-  const rows = state.archiveTickets.map(t => [t.ticketId,t.deptName,t.bu,t.category,t.subCategory,t.title,t.status,t.priority,t.reporterName,t.phone,t.assignedTo,t.rating,t.createdAt,t.archivedAt]);
+  const rows = state.archiveTickets.map(t => [cjId(t.ticketId),t.deptName,t.bu,t.category,t.subCategory,t.title,t.status,t.priority,t.reporterName,t.phone,t.assignedTo,t.rating,t.createdAt,t.archivedAt]);
   const csv = '\ufeff' + [headers,...rows].map(r => r.map(c => '"' + String(c||'').replace(/"/g,'""') + '"').join(',')).join('\n');
   const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
@@ -2649,7 +2644,7 @@ async function loadTrash() {
         <div class="ticket-body">
           <div class="ticket-title">${escapeHtml(it.title)}</div>
           <div class="ticket-meta">
-            <span>🏭 ${escapeHtml(it.siteId)}</span><span>🎫 ${escapeHtml(it.ticketId)}</span>
+            <span>🏭 ${escapeHtml(it.siteId)}</span><span>🎫 ${escapeHtml(cjId(it.ticketId))}</span>
             <span>👤 ลบโดย ${escapeHtml(it.deletedBy)}</span><span>🕒 ${escapeHtml(it.deletedAt)}</span>
             <span class="age-badge ${it.daysLeft <= 2 ? 'late' : 'warn'}">เหลือ ${it.daysLeft} วัน</span>
           </div>
@@ -2826,7 +2821,7 @@ function startUserPoll() {
   if (state.pollTimer) clearInterval(state.pollTimer);
   const poll = async () => {
     try {
-      const r = await apiGet('pollUser', { siteId: state.user.siteId, deptId: state.user.deptId });
+      const r = await apiGet('pollUser', { siteId: state.user.siteId, deptId: state.user.deptId, position: state.user.position });
       if (!r.ok) return;
       processUserPoll(r.tickets);
     } catch(e) {}
@@ -2883,7 +2878,7 @@ function updateNotifList() {
   list.innerHTML = state.notifTickets.map(n => `
     <div class="notif-item" onclick="notifClick('${n.ticketId}')">
       <div class="notif-title">${n.type === 'comment' ? '💬' : (n.priority === 'urgent' ? '🔴' : '🎫')} ${escapeHtml(n.title)}</div>
-      <div class="notif-meta">${n.type === 'comment' ? 'ความคิดเห็นใหม่' : 'Ticket ใหม่'} ${n.deptName ? '• ' + escapeHtml(n.deptName) : ''} • ${escapeHtml(String(n.updatedAt||''))}</div>
+      <div class="notif-meta">${escapeHtml(cjId(n.ticketId))} • ${n.type === 'comment' ? 'ความคิดเห็นใหม่' : 'Ticket ใหม่'} ${n.deptName ? '• ' + escapeHtml(n.deptName) : ''} • ${escapeHtml(String(n.updatedAt||''))}</div>
     </div>`).join('');
 }
 
@@ -3038,6 +3033,7 @@ function buildCJPattern(t) {
   const site = state.user.siteName || state.user.siteId;
   const buLine = t.bu ? `${site} — ${t.bu}` : site;
   const lines = [
+    `CJ Ticket No.         : ${t.ticketId}`,
     `DC / Site / BU        : ${buLine}`,
     `User Request          : ${t.reporterName || ''}`,
     `แผนก (Department)     : ${t.deptName || ''}`,
@@ -3077,6 +3073,7 @@ function downloadCJWord(ticketId) {
   const buLine = t.bu ? `${site} — ${t.bu}` : site;
   // สร้าง Word file แบบ HTML-based (.doc) — Word เปิดได้ รองรับภาษาไทย
   const rows = [
+    ['CJ Ticket No.', String(t.ticketId)],
     ['DC / Site / BU', buLine],
     ['User Request', t.reporterName || ''],
     ['แผนก (Department)', t.deptName || ''],
@@ -3094,17 +3091,17 @@ function downloadCJWord(ticketId) {
       <td style="padding:8px 10px;border:1px solid #999;vertical-align:top;white-space:pre-wrap;">${k==='เอกสาร / รูปภาพแนบ' ? v : escapeHtml(String(v))}</td>
     </tr>`).join('');
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>Ticket ${escapeHtml(t.ticketId)}</title>
+<head><meta charset="UTF-8"><title>Ticket ${escapeHtml(cjId(t.ticketId))}</title>
 <style>body{font-family:'TH Sarabun New','Sarabun',Tahoma,sans-serif;font-size:16pt;} table{border-collapse:collapse;width:100%;}</style>
 </head><body>
-<h2 style="margin:0 0 12px 0;">Ticket Request — ${escapeHtml(t.ticketId)}</h2>
+<h2 style="margin:0 0 12px 0;">Ticket Request — ${escapeHtml(cjId(t.ticketId))}</h2>
 <table>${tableRows}</table>
 <p style="font-size:11pt;color:#666;margin-top:20px;">สร้างจาก Ticket System • ${escapeHtml(String(t.createdAt))}</p>
 </body></html>`;
   const blob = new Blob(['\ufeff' + html], { type: 'application/msword;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `Ticket_${t.ticketId}_${state.user.siteId}.doc`;
+  a.download = `Ticket_CJ${t.ticketId}_${state.user.siteId}.doc`;
   a.click();
   URL.revokeObjectURL(a.href);
   toast('📄 ดาวน์โหลดเสร็จ', a.download, 'success');
