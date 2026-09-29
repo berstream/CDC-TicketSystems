@@ -537,11 +537,38 @@ function toggleSound() {
 
 /* ═══════ SESSION (localStorage + cookie) ═══════ */
 const SESSION_KEY = 'tk_session';
-const SESSION_HOURS = 12;
-function saveSession() {
-  const json = JSON.stringify({ user: state.user, superMode: state.superMode, superKey: state.superKey, expires: Date.now() + SESSION_HOURS*3600000 });
+/* เวลาอยู่ในระบบ แยกตามสิทธิ์
+   idleMin  = ไม่ได้ใช้งานกี่นาทีแล้วหลุด
+   maxHours = นานสุดกี่ชั่วโมงนับจากตอน login (ใช้งานต่อเนื่องก็ไม่ต่อเวลา) */
+const SESSION_RULES = {
+  admin: { idleMin: 180, maxHours: 24 },  // IT Admin + Super Admin
+  user:  { idleMin: 120, maxHours: 12 }   // ผู้ใช้ทั่วไป / ผู้อนุมัติ
+};
+function isAdminSession(sess) { return !!(sess && (sess.superMode || (sess.user && sess.user.isAdmin))); }
+function sessionRule(sess) { return isAdminSession(sess || state) ? SESSION_RULES.admin : SESSION_RULES.user; }
+function fmtIdle(min) { return min % 60 === 0 ? (min / 60) + ' ชั่วโมง' : min + ' นาที'; }
+
+function writeSessionRaw(obj) {
+  const json = JSON.stringify(obj);
+  const remainSec = Math.max(60, Math.floor((obj.expires - Date.now()) / 1000));
   try { localStorage.setItem(SESSION_KEY, json); } catch(e) {}
-  try { document.cookie = SESSION_KEY + '=' + encodeURIComponent(json) + ';path=/;max-age=' + SESSION_HOURS*3600 + ';SameSite=Lax'; } catch(e) {}
+  try { document.cookie = SESSION_KEY + '=' + encodeURIComponent(json) + ';path=/;max-age=' + remainSec + ';SameSite=Lax'; } catch(e) {}
+}
+function saveSession() {
+  if (!state.loginAt) state.loginAt = Date.now();   // เวลาเริ่ม login (ไม่รีเซ็ตตอนเปลี่ยนรหัส)
+  const rule = sessionRule();
+  writeSessionRaw({
+    user: state.user, superMode: state.superMode, superKey: state.superKey,
+    loginAt: state.loginAt,
+    expires: state.loginAt + rule.maxHours * 3600000,
+    lastActivity: lastActivity,
+    tab: state.currentTab || ''
+  });
+}
+/** อัปเดตเวลาใช้งานล่าสุด + แท็บปัจจุบัน ลง session (ให้รีเฟรชแล้วกลับหน้าเดิม และนับเวลา idle ต่อเนื่อง) */
+function touchSession() {
+  if (!state.user && !state.superMode) return;
+  saveSession();
 }
 function loadSession() {
   let raw = null;
@@ -550,8 +577,13 @@ function loadSession() {
   if (!raw) return null;
   try {
     const p = JSON.parse(raw);
-    if (!p.expires || Date.now() > p.expires) { clearSession(); return null; }
-    try { localStorage.setItem(SESSION_KEY, raw); } catch(e) {}
+    const rule = sessionRule(p);
+    // session แบบเก่า (ก่อนอัปเดต) ไม่มี loginAt → ประมาณจาก expires เดิม (เดิมตั้งไว้ 12 ชม.)
+    if (!p.loginAt) p.loginAt = p.expires ? p.expires - 12 * 3600000 : Date.now();
+    p.expires = p.loginAt + rule.maxHours * 3600000;
+    const last = p.lastActivity || p.loginAt;
+    if (Date.now() >= p.expires) { clearSession(); p._expired = 'max'; return p; }
+    if (Date.now() - last >= rule.idleMin * 60000) { clearSession(); p._expired = 'idle'; return p; }
     return p;
   } catch(e) { return null; }
 }
@@ -574,19 +606,33 @@ function saveReadIds(key, set) {
   try { localStorage.setItem(key, JSON.stringify(Array.from(set).slice(-500))); } catch(e) {}
 }
 
-/* ═══════ IDLE LOGOUT (30 นาที) ═══════ */
-const IDLE_MS = 30*60*1000;
+/* ═══════ IDLE LOGOUT (Admin 3 ชม. / User 2 ชม.) + นานสุด (Admin 24 ชม. / User 12 ชม.) ═══════ */
 let lastActivity = Date.now();
+let idleListenersOn = false;
+let lastTouchSaved = 0;
 function startIdleWatch() {
   lastActivity = Date.now();
-  ['click','keydown','mousemove','touchstart','scroll'].forEach(ev => document.addEventListener(ev, () => lastActivity = Date.now(), { passive:true }));
+  if (!idleListenersOn) {
+    idleListenersOn = true;
+    ['click','keydown','mousemove','touchstart','scroll'].forEach(ev => document.addEventListener(ev, () => lastActivity = Date.now(), { passive:true }));
+    // ปิดแท็บ / สลับแอปบนมือถือ → บันทึกเวลาใช้งานล่าสุดไว้ก่อน
+    document.addEventListener('visibilitychange', () => { if (document.hidden) touchSession(); else checkSessionLimits(); });
+    window.addEventListener('pagehide', touchSession);
+  }
+  touchSession();
   if (state.idleTimer) clearInterval(state.idleTimer);
-  state.idleTimer = setInterval(() => {
-    if (!state.user && !state.superMode) return;
-    const idle = Date.now() - lastActivity;
-    if (idle > IDLE_MS - 120000 && idle < IDLE_MS - 60000) toast('⏰ ใกล้หมดเวลา', 'จะออกจากระบบใน 2 นาที (ขยับเมาส์เพื่อใช้งานต่อ)', 'warning');
-    if (idle >= IDLE_MS) logout('idle');
-  }, 60000);
+  state.idleTimer = setInterval(checkSessionLimits, 60000);
+}
+function checkSessionLimits() {
+  if (!state.user && !state.superMode) return;
+  const rule = sessionRule();
+  const idleMs = rule.idleMin * 60000;
+  const idle = Date.now() - lastActivity;
+  if (state.loginAt && Date.now() >= state.loginAt + rule.maxHours * 3600000) { logout('max'); return; }
+  if (idle >= idleMs) { logout('idle'); return; }
+  if (idle > idleMs - 120000 && idle < idleMs - 60000) toast('⏰ ใกล้หมดเวลา', 'จะออกจากระบบใน 2 นาที (ขยับเมาส์เพื่อใช้งานต่อ)', 'warning');
+  // บันทึกเวลาใช้งานล่าสุดทุก ~1 นาที (เฉพาะตอนมีการใช้งานจริง)
+  if (lastActivity > lastTouchSaved) { lastTouchSaved = lastActivity; touchSession(); }
 }
 
 /* ═══════ VIEWS ═══════ */
@@ -660,6 +706,7 @@ async function doLogin() {
       // ถ้าไม่ใช่ Admin แต่เป็น approver → เก็บรหัสสำหรับใช้อนุมัติ (จำเฉพาะ session ในหน่วยความจำ ไม่บันทึกในไฟล์)
       if (!state.user.isAdmin && state.user.isApprover) state.user.approverPassword = password;
       state.superMode = false; state.superKey = null;
+      state.loginAt = Date.now(); lastActivity = Date.now();
       saveSession();
       enterApp();
     } else {
@@ -678,6 +725,7 @@ async function doSuperLogin() {
     const r = await apiGet('loginSuper', { password });
     if (r.ok) {
       state.superMode = true; state.superKey = password; state.user = null;
+      state.loginAt = Date.now(); lastActivity = Date.now();
       saveSession();
       enterSuperApp();
     } else {
@@ -691,7 +739,8 @@ function logout(silent) {
   if (state.pollTimer) clearInterval(state.pollTimer);
   if (state.idleTimer) clearInterval(state.idleTimer);
   clearSession();
-  state.user = null; state.superMode = false; state.superKey = null;
+  const wasRule = sessionRule();
+  state.user = null; state.superMode = false; state.superKey = null; state.loginAt = null;
   state.pollTimer = null; state.idleTimer = null; state.primed = false;
   state.knownSnapshot = {}; state.notifTickets = []; state.updatedTicketIds = new Set();
   document.getElementById('topbarRight').style.display = 'none';
@@ -700,7 +749,8 @@ function logout(silent) {
   document.getElementById('loginPassword').value = '';
   document.getElementById('superPassword').value = '';
   showView('siteSelectView');
-  if (silent === 'idle') toast('ออกจากระบบอัตโนมัติ', 'ไม่มีการใช้งานเกิน 30 นาที', 'warning');
+  if (silent === 'idle') toast('ออกจากระบบอัตโนมัติ', 'ไม่มีการใช้งานเกิน ' + fmtIdle(wasRule.idleMin), 'warning');
+  if (silent === 'max') toast('หมดเวลาใช้งาน', 'ครบ ' + wasRule.maxHours + ' ชั่วโมง — กรุณาเข้าสู่ระบบใหม่', 'warning');
 }
 
 /* ═══════ MASTER DATA CACHE (ไม่แตะ login — ใช้หลัง login แล้วเท่านั้น) ═══════
@@ -1189,6 +1239,7 @@ function fmtDuration(hrs) {
 
 function switchTab(tab) {
   state.currentTab = tab;
+  touchSession(); // จำแท็บไว้ รีเฟรชแล้วกลับมาหน้าเดิม
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
   if (tab === 'myTickets') { loadMyTickets(); state.updatedTicketIds.clear(); updateUserBadge(); }
@@ -3288,6 +3339,13 @@ function startApproverPoll() {
 }
 
 /* ═══════ INIT (โหลดหน้า / กู้ session) ═══════ */
+/** รีเฟรชแล้วกลับไปแท็บเดิม (ถ้าแท็บนั้นยังมีสำหรับสิทธิ์นี้) */
+function restoreTab(tab) {
+  if (!tab || tab === state.currentTab) return;
+  const btn = document.querySelector('.tab[data-tab="' + tab + '"]');
+  if (btn) switchTab(tab);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // โหลดค่าเสียงที่จำไว้ (ค่าเริ่มต้น = เปิด) + เตรียมเสียงให้พร้อมทันทีที่มีการคลิกครั้งแรก
   state.soundOn = loadSoundPref();
@@ -3300,16 +3358,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   armAudioOnFirstInteraction();
 
   const sess = loadSession();
+  if (sess && sess._expired) {
+    const rule = sessionRule(sess);
+    showView('siteSelectView');
+    loadSites();
+    if (sess._expired === 'idle') toast('ออกจากระบบอัตโนมัติ', 'ไม่มีการใช้งานเกิน ' + fmtIdle(rule.idleMin), 'warning');
+    else toast('หมดเวลาใช้งาน', 'ครบ ' + rule.maxHours + ' ชั่วโมง — กรุณาเข้าสู่ระบบใหม่', 'warning');
+    return;
+  }
   if (sess && sess.superMode) {
-    state.superMode = true; state.superKey = sess.superKey;
-    enterSuperApp();
+    state.superMode = true; state.superKey = sess.superKey; state.loginAt = sess.loginAt;
+    await enterSuperApp();
+    restoreTab(sess.tab);
     return;
   }
   if (sess && sess.user) {
-    state.user = sess.user;
+    state.user = sess.user; state.loginAt = sess.loginAt;
     // ต้องมีรายชื่อ sites ไว้ให้ dashboard/notif ใช้
     try { const r = await apiGet('getSites'); if (r.ok) state.sites = r.sites; } catch(e) {}
-    enterApp();
+    await enterApp();
+    restoreTab(sess.tab);
     // โหลด site grid เผื่อ logout
     loadSites();
     return;
